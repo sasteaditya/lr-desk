@@ -162,6 +162,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .spacer{flex:1}
 .foot{display:flex;gap:8px}
 .decl{flex:1.1;background:#EEF4FA;border:1px solid #B9C7DA;padding:8px 10px;font-style:italic;color:#5A6B85;font-size:8px;line-height:1.45;display:flex;flex-direction:column;justify-content:space-between}
+.decl .tt{font-style:normal;font-weight:700;font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#12357A}
+.decl ol{margin:3px 0 0;padding-left:13px;font-style:normal;font-size:7.4px;line-height:1.4;color:#374151}
+.decl li{margin:0 0 1px}
+.stamp .st-note{margin-top:auto;padding:4px 6px;font-size:7.2px;font-style:italic;color:#5A6B85;border-top:1px dashed #B9C7DA}
 .decl .place{font-style:normal;font-weight:700;font-size:6.8px;letter-spacing:.06em;text-transform:uppercase}
 .sign{flex:1;border:1px solid #B9C7DA;display:flex;flex-direction:column;align-items:center}
 .sign img{height:74px;margin:6px 0 2px;object-fit:contain}
@@ -380,8 +384,8 @@ function sheetHTML(L){
   return `<div class="sheet">
   <div class="sh-head"><img class="sh-logo" src="${LOGO}" alt="">
     <div class="sh-co"><div class="sh-name">ADITYA TRANSPORT</div>
-      <div class="sh-sub">Transport &amp; Logistics Services &nbsp;|&nbsp; A/P Moshi (Shivajiwadi), Tal. Havli, Pune 412105</div>
-      <div class="sh-contact">Ph: 8007500060 &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; GSTIN: 27EYZPS6008D1ZT</div></div>
+      <div class="sh-sub">Jalindar Smruti, Shiwajiwadi, In Front of Sun Harmony, Moshi, Pune - 412105</div>
+      <div class="sh-contact">Ph: 8007500060 &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; www.adityatransport.com</div><div class="sh-contact">GSTIN: 27EYZPS6008D1ZT</div></div>
     <div class="sh-box"><div class="sh-boxt">LORRY RECEIPT</div><table><colgroup><col style="width:42%"><col></colgroup>
       <tr><td class="l">LR No.</td><td class="no">${no}</td></tr><tr><td class="l">LR Date</td><td class="c">${fd(L.date)}</td></tr>
       <tr><td class="l">Freight</td><td class="c" style="color:#B45309">${e("freight")}</td></tr></table></div></div>
@@ -410,12 +414,12 @@ function sheetHTML(L){
   ${kv([[["VTS Reach Date",fd(L.vtsDate)],["VTS Reach Time",e("vtsTime")],["GRN No.",e("grn")],["GRN Date",fd(L.grnDate)]],
        [["Received By",e("rcvBy")],["Contact No.",e("rcvContact")],["Received Date",fd(L.rcvDate)],["Received Time",e("rcvTime")]]])}
   <div class="lower"><table class="conds-t"><colgroup><col><col style="width:26px"><col><col style="width:26px"></colgroup><tr><th colspan="4">Item condition on arrival</th></tr>${conds}</table>
-    <div class="stamp"><div class="st-h">Receiver's stamp &amp; signature</div></div></div>
+    <div class="stamp"><div class="st-h">Receiver's stamp &amp; signature</div><div class="st-note">Received the above goods in good order and condition, except as noted above.</div></div></div>
   ${kv([[["Remarks",`<div style="min-height:26px;font-size:8.5px">${e("remarks")}</div>`,7]]])}
   <div class="spacer"></div>
-  <div class="foot"><div class="decl"><span>"We certify that the goods have been delivered to the customer in good condition. We are liable to pay back, as per contract, for non-receipt of goods / short receipt or quality, if any claim arises at a later date."</span><span class="place">Place of issue: Pune</span></div>
+  <div class="foot"><div class="decl"><span class="tt">Terms of carriage</span><ol><li>Goods are carried subject to the transport contract with the consignor and the Carriage by Road Act, 2007.</li><li>The carrier is not liable for loss or damage caused by natural calamity, fire, riot, accident beyond its control, improper or insufficient packing, or the inherent nature of the goods.</li><li>Any shortage or damage must be recorded on this LR at the time of delivery. Claims must be made in writing within 7 days of delivery; claims made later will not be accepted.</li><li>Subject to Pune jurisdiction.</li></ol></div>
     <div class="sign">${SIGN?`<img src="${SIGN}" alt="">`:`<div style="height:82px"></div>`}<div class="cap">Authorised Signatory &nbsp;|&nbsp; As Carrier</div></div></div>
-  <div class="thanks">Thank you for choosing Aditya Transport &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; 8007500060</div>
+  <div class="thanks">Thank you for choosing Aditya Transport &nbsp;|&nbsp; www.adityatransport.com &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; 8007500060</div>
 </div>`;
 }
 let raf=0;function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(renderPreview)}
