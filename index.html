@@ -194,6 +194,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 @keyframes sp{to{transform:rotate(360deg)}}
 .linkbtn{background:none;border:none;color:var(--accent);font-weight:600;cursor:pointer;padding:2px;text-decoration:underline}
 .linkbtn:disabled{color:var(--muted);text-decoration:none;cursor:default}
+.modal{position:fixed;inset:0;z-index:25;background:rgba(8,14,28,.5);display:flex;align-items:center;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.modal-in{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:min(440px,100%);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto}
+.modal-in h3{margin:0;font-family:var(--display);font-size:18px;color:var(--accent)}
+.chk{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);background:var(--field);border-radius:10px;padding:10px 12px;cursor:pointer}
+.chk input{margin-top:3px;width:18px;height:18px;flex:none}
+.chk small{color:var(--muted);overflow-wrap:anywhere}
+.chk:has(input:disabled){opacity:.6;cursor:default}
+.modal-btns{display:flex;justify-content:flex-end;gap:8px}
 #printArea{display:none}
 @media print{
   @page{size:A4;margin:0}
@@ -217,6 +225,7 @@ button,input,select,textarea{font:inherit;color:inherit}
       <button class="btn ghost" id="bList" type="button">Saved LRs <span id="cnt"></span></button>
       <button class="btn" id="bSave" type="button">Save</button>
       <button class="btn" id="bPrint" type="button">Print</button>
+      <button class="btn" id="bEmail" type="button">Email PDF</button>
       <button class="btn primary" id="bPdf" type="button">Download PDF</button>
       <span class="status" id="who"></span>
       <button class="btn ghost" id="bLock" type="button">Sign out</button>
@@ -267,6 +276,18 @@ button,input,select,textarea{font:inherit;color:inherit}
     <div class="msg" id="lockMsg" role="status" aria-live="polite" hidden></div>
   </form>
 </div>
+<div class="modal" id="emailBox" hidden>
+  <div class="modal-in" role="dialog" aria-labelledby="emTitle">
+    <h3 id="emTitle">Email this LR as PDF</h3>
+    <label class="chk"><input type="checkbox" id="emCnor"><span><b>Consignor</b><br><small id="emCnorLbl"></small></span></label>
+    <label class="chk"><input type="checkbox" id="emCnee"><span><b>Consignee</b><br><small id="emCneeLbl"></small></span></label>
+    <label class="chk" id="emCcRow"><input type="checkbox" id="emCc"><span><b>Copy to us</b><br><small id="emCcLbl"></small></span></label>
+    <div class="f"><label for="emExtra">Also send to (optional, separate with commas)</label><input id="emExtra" type="email" multiple placeholder="accounts@client.com"></div>
+    <div class="status" id="emLast"></div>
+    <div class="status" id="emNote" role="status"></div>
+    <div class="modal-btns"><button class="btn ghost" id="emCancel" type="button">Cancel</button><button class="btn primary" id="emSend" type="button">Send email</button></div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea"></div>
 <script>
@@ -289,8 +310,8 @@ const SECTIONS=[
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
    {k:"lp",l:"Loading Point",w:2,list:"dlPlace"},{k:"dest",l:"Destination",w:2,list:"dlPlace"}]},
- {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"}]},
- {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"}]},
+ {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"},{k:"cnorEmail",l:"Email (gets the PDF copy, use commas for more than one)",w:4,type:"email",multi:1}]},
+ {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"},{k:"cneeEmail",l:"Email (gets the PDF copy, use commas for more than one)",w:4,type:"email",multi:1}]},
  {t:"Billed To",billed:1},
  {t:"Invoice & Order",f:[{k:"inv",l:"GST Inv. No."},{k:"invDate",l:"Inv. Date",type:"date"},{k:"invVal",l:"Inv. Value (Rs.)",mode:"decimal"},{k:"inco",l:"Incoterms"},
    {k:"po",l:"P.O. No."},{k:"poDate",l:"P.O. Date",type:"date"},{k:"ewb",l:"E-Way Bill No."},{k:"ewbValid",l:"E-Way Valid Upto",type:"date"},
@@ -329,7 +350,7 @@ function fieldHTML(x){
   let input;
   if(x.type==="select")input=`<select id="${id}" data-k="${x.k}">${x.opts.map(o=>`<option${o===cur[x.k]?" selected":""}>${o}</option>`).join("")}</select>`;
   else if(x.type==="area")input=`<textarea id="${id}" data-k="${x.k}" rows="2">${v}</textarea>`;
-  else input=`<input id="${id}" data-k="${x.k}" type="${x.type||"text"}" value="${v}"${x.list?` list="${x.list}"`:""}${x.mode?` inputmode="${x.mode}"`:""}${x.party?` data-party="${x.party}"`:""}${x.up?` data-up="1"`:""}>`;
+  else input=`<input id="${id}" data-k="${x.k}" type="${x.type||"text"}" value="${v}"${x.list?` list="${x.list}"`:""}${x.mode?` inputmode="${x.mode}"`:""}${x.party?` data-party="${x.party}"`:""}${x.up?` data-up="1"`:""}${x.multi?" multiple":""}>`;
   return `<div class="${cls}"><label for="${id}">${x.l}</label>${input}</div>`;
 }
 function buildForm(){
@@ -365,7 +386,7 @@ function buildForm(){
 }
 function fillLists(){
   const parties=new Map(),veh=new Set(),places=new Set();
-  all.forEach(d=>{[["cnor"],["cnee"]].forEach(([p])=>{if(d[p+"Name"])parties.set(d[p+"Name"],{addr:d[p+"Addr"],gst:d[p+"Gst"]})});
+  all.forEach(d=>{[["cnor"],["cnee"]].forEach(([p])=>{if(d[p+"Name"])parties.set(d[p+"Name"],{addr:d[p+"Addr"],gst:d[p+"Gst"],email:d[p+"Email"]})});
     if(d.veh)veh.add(d.veh);if(d.lp)places.add(d.lp);if(d.dest)places.add(d.dest)});
   window._parties=parties;
   const opt=s=>[...s].map(v=>`<option value="${esc(v)}">`).join("");
@@ -376,7 +397,7 @@ $("form").addEventListener("input",e=>{
   const t=e.target;
   if(t.dataset.k){let v=t.value;if(t.dataset.up){v=v.toUpperCase();if(t.value!==v){const p=t.selectionStart;t.value=v;try{t.setSelectionRange(p,p)}catch(_){}}}
     cur[t.dataset.k]=v;
-    if(t.dataset.party){const p=window._parties?.get(v);if(p){const pre=t.dataset.party;if(!cur[pre+"Addr"]){cur[pre+"Addr"]=p.addr||"";$("i_"+pre+"Addr").value=cur[pre+"Addr"]}if(!cur[pre+"Gst"]){cur[pre+"Gst"]=p.gst||"";$("i_"+pre+"Gst").value=cur[pre+"Gst"]}}}
+    if(t.dataset.party){const p=window._parties?.get(v);if(p){const pre=t.dataset.party;if(!cur[pre+"Addr"]){cur[pre+"Addr"]=p.addr||"";$("i_"+pre+"Addr").value=cur[pre+"Addr"]}if(!cur[pre+"Gst"]){cur[pre+"Gst"]=p.gst||"";$("i_"+pre+"Gst").value=cur[pre+"Gst"]}if(!cur[pre+"Email"]&&p.email){cur[pre+"Email"]=p.email;$("i_"+pre+"Email").value=p.email}}}
     if(/^(cnor|cnee)/.test(t.dataset.k)&&cur.billTo!=="Other")syncBill();
     markDirty();
   }
@@ -461,7 +482,7 @@ function status(){const s=$("status");
   if(dirty){s.className="status dirty";s.textContent=cur.lrNo?"Unsaved changes":"New LR · not saved yet"}
   else{s.className="status ok";s.textContent=cur.lrNo?"Saved":"New LR"}}
 let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3200)}
-function busy(on,label){["bSave","bPdf","bPrint"].forEach(id=>$(id).disabled=on);if(label)$("bPdf").textContent=on?label:"Download PDF"}
+function busy(on,label){["bSave","bPdf","bPrint","bEmail"].forEach(id=>$(id).disabled=on);if(label)$("bPdf").textContent=on?label:"Download PDF"}
 
 /* ---------- Google Sheet connection & sign-in ---------- */
 const API=(window.LR_CONFIG&&window.LR_CONFIG.scriptUrl)||"";
@@ -568,7 +589,7 @@ async function save(){
     cur=j.lr;if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};
     const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i]=JSON.parse(JSON.stringify(cur));else all.unshift(JSON.parse(JSON.stringify(cur)));
     dirty=false;try{localStorage.removeItem("lrDraft")}catch(e){}
-    fillLists();renderList();status();schedule();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);return true;
+    fillLists();renderList();status();schedule();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);if(isNew)setTimeout(autoEmail,400);return true;
   }catch(e){if(e.code!=="auth")toast(e.message);return false}
   finally{busy(false)}
 }
@@ -580,25 +601,79 @@ async function doPrint(){
   try{await document.fonts.ready}catch(e){}
   setTimeout(()=>window.print(),60);
 }
+async function makePdf(scale){
+  try{await document.fonts.ready}catch(e){}
+  const host=document.createElement("div");host.style.cssText="position:fixed;left:-12000px;top:0;";host.innerHTML=sheetHTML(cur);document.body.appendChild(host);
+  try{
+    await imagesReady(host);
+    const canvas=await html2canvas(host.firstElementChild,{scale:scale||2.4,backgroundColor:"#ffffff",logging:false});
+    const doc=new window.jspdf.jsPDF({unit:"mm",format:"a4",compress:true});
+    doc.addImage(canvas.toDataURL("image/jpeg",0.9),"JPEG",0,0,210,297);
+    return doc;
+  }finally{host.remove()}
+}
 async function pdf(){
   if(!(await ensureSaved()))return;
   busy(true,"Preparing PDF…");
-  try{
-    try{await document.fonts.ready}catch(e){}
-    const host=document.createElement("div");host.style.cssText="position:fixed;left:-12000px;top:0;";host.innerHTML=sheetHTML(cur);document.body.appendChild(host);
-    await imagesReady(host);
-    const canvas=await html2canvas(host.firstElementChild,{scale:2.4,backgroundColor:"#ffffff",logging:false});host.remove();
-    const doc=new window.jspdf.jsPDF({unit:"mm",format:"a4",compress:true});
-    doc.addImage(canvas.toDataURL("image/jpeg",0.93),"JPEG",0,0,210,297);
-    doc.save(`LR_${cur.lrNo}.pdf`);
-    toast("PDF downloaded");
-  }catch(e){toast("Could not create the PDF. Try again.")}
+  try{const doc=await makePdf(2.4);doc.save(`LR_${cur.lrNo}.pdf`);toast("PDF downloaded")}
+  catch(e){toast("Could not create the PDF. Try again.")}
   finally{busy(false)}
+}
+
+/* ---------- Email PDF ---------- */
+const splitEmails=s=>String(s||"").split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+const okEmail=x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);
+function recipients(){
+  const out=[];
+  if($("emCnor").checked)out.push(...splitEmails(cur.cnorEmail));
+  if($("emCnee").checked)out.push(...splitEmails(cur.cneeEmail));
+  out.push(...splitEmails($("emExtra").value));
+  return [...new Set(out)];
+}
+function openEmail(){
+  if(!unlocked){showLock("Sign in to email LRs.");return}
+  const ce=splitEmails(cur.cnorEmail),ne=splitEmails(cur.cneeEmail);
+  $("emCnorLbl").textContent=ce.length?ce.join(", "):"No email entered";
+  $("emCneeLbl").textContent=ne.length?ne.join(", "):"No email entered";
+  $("emCnor").checked=ce.length>0;$("emCnor").disabled=!ce.length;
+  $("emCnee").checked=ne.length>0;$("emCnee").disabled=!ne.length;
+  $("emCcRow").hidden=!settings.cc;$("emCcLbl").textContent=settings.cc||"";$("emCc").checked=!!settings.cc;
+  $("emExtra").value="";$("emNote").textContent="";$("emNote").className="status";
+  const last=(cur.emailLog||[]).slice(-1)[0];
+  $("emLast").textContent=last?`Last emailed ${last.at} to ${last.to}`:"";
+  $("emailBox").hidden=false;
+}
+async function sendEmail(list,cc,auto){
+  if(!list.length&&!cc)throw new Error("Add at least one email address.");
+  const bad=list.filter(x=>!okEmail(x));if(bad.length)throw new Error("Check this email: "+bad[0]);
+  const doc=await makePdf(2);
+  const b64=doc.output("datauristring").split(",")[1];
+  const j=await api("emailLR",{lrNo:cur.lrNo,to:list,cc:cc?settings.cc:"",pdf:b64,auto:!!auto},90000);
+  if(j.lr){cur.emailLog=j.lr.emailLog;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].emailLog=j.lr.emailLog}
+  return j;
+}
+$("bEmail").onclick=async()=>{if(!(await ensureSaved()))return;openEmail()};
+$("emCancel").onclick=()=>{$("emailBox").hidden=true};
+$("emailBox").addEventListener("click",e=>{if(e.target===$("emailBox"))$("emailBox").hidden=true});
+$("emSend").onclick=async()=>{
+  const list=recipients(),cc=$("emCc").checked&&!!settings.cc;
+  const n=$("emNote");$("emSend").disabled=true;n.className="status";n.textContent="Preparing PDF and sending…";
+  try{const j=await sendEmail(list,cc,false);$("emailBox").hidden=true;toast(`${cur.lrNo} emailed to ${j.sentTo}`)}
+  catch(e){n.className="status dirty";n.textContent=e.message}
+  finally{$("emSend").disabled=false}
+};
+async function autoEmail(){
+  if(!settings.autoEmail)return;
+  const list=[...new Set([...splitEmails(cur.cnorEmail),...splitEmails(cur.cneeEmail)])].filter(okEmail);
+  if(!list.length){toast(`${cur.lrNo} saved. No party email, so it was not emailed.`);return}
+  toast(`Emailing ${cur.lrNo} to ${list.length} ${list.length>1?"people":"person"}…`);
+  try{const j=await sendEmail(list,!!settings.cc,true);toast(`${cur.lrNo} saved and emailed to ${j.sentTo}`)}
+  catch(e){if(e.code!=="auth")toast(`Saved, but email failed: ${e.message} Use Email PDF to retry.`)}
 }
 function load(L){cur=JSON.parse(JSON.stringify(L));if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};dirty=false;buildForm();schedule();status();window.scrollTo(0,0)}
 function newLR(from){
   const L=blankLR();
-  if(from){const keep=["freight","veh","tveh","driver","driverMob","plant","vendor","ccode","lp","dest","cnorName","cnorAddr","cnorGst","cneeName","cneeAddr","cneeGst","billTo","billName","billAddr","billGst","billState","billContact","billPan","inco"];keep.forEach(k=>{if(from[k]!=null)L[k]=from[k]});
+  if(from){const keep=["freight","veh","tveh","driver","driverMob","plant","vendor","ccode","lp","dest","cnorName","cnorAddr","cnorGst","cneeName","cneeAddr","cneeGst","cnorEmail","cneeEmail","billTo","billName","billAddr","billGst","billState","billContact","billPan","inco"];keep.forEach(k=>{if(from[k]!=null)L[k]=from[k]});
     L.items=(from.items||[]).map(i=>({...blankItem(),desc:i.desc,code:i.code}))}
   load(L);if(from){dirty=true;status()}
 }
