@@ -86,7 +86,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 78px);align-self:start;min-width:0}
 .pv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:var(--muted)}
 .pv-wrap{width:100%;overflow:hidden;border-radius:6px;box-shadow:0 1px 2px rgba(15,30,60,.12),0 8px 28px rgba(15,30,60,.14)}
-.pv-wrap .sheet{transform-origin:top left}
+.pv-wrap{background:transparent}
+#pv .sheet+.sheet{margin-top:18px}
+.sheet>*{flex-shrink:0}
+.sheet>.spacer{flex:1 1 auto}
+.pgno{align-self:flex-end;font-size:7.5px;font-weight:700;color:#5A6B85;letter-spacing:.06em;text-transform:uppercase;margin:-3px 0 -2px}
+.mat tr.more td{text-align:center;font-style:italic;color:#5A6B85;background:#EEF4FA!important;font-size:8px}
 
 .drawer{position:fixed;inset:0;z-index:20;display:flex;justify-content:flex-end;background:rgba(8,14,28,.45)}
 .drawer-in{width:min(460px,100%);height:100%;background:var(--panel);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
@@ -122,14 +127,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* ---------- The printed LR (always paper white, fixed brand colours) ---------- */
-.sheet{width:794px;height:1123px;background:#FFFFFF;color:#1F2937;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:9.5px;padding:30px 32px 26px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.sheet{width:794px;height:1123px;background:#FFFFFF;color:#1F2937;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:9.5px;padding:22px 30px 18px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
 .sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
-.sheet td,.sheet th{border:1px solid #B9C7DA;padding:3px 6px;height:21px;vertical-align:middle;overflow-wrap:anywhere;line-height:1.25}
+.sheet td,.sheet th{border:1px solid #B9C7DA;padding:2px 6px;height:19px;vertical-align:middle;overflow-wrap:anywhere;line-height:1.25}
 .sheet td.l{background:#EEF4FA;color:#5A6B85;font-size:6.6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .sheet td.v{color:#111827;font-weight:500}
 .sheet td.b{font-weight:700}
 .sh-head{display:flex;align-items:stretch;gap:14px}
-.sh-logo{width:96px;height:84px;object-fit:contain}
+.sh-logo{width:90px;height:78px;object-fit:contain}
 .sh-co{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px}
 .sh-name{font-family:"Archivo","Arial Narrow",Arial,sans-serif;font-weight:800;font-size:30px;color:#12357A;letter-spacing:.01em;line-height:1}
 .sh-sub{color:#5A6B85;font-size:8.5px}
@@ -146,7 +151,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .duo{display:flex;gap:0}
 .duo>.sec{flex:1}
 .mat th{background:#DCE9F6;color:#12357A;font-size:6.8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;height:24px}
-.mat td{height:20px}
+.mat td{height:18px}
 .mat tr:nth-child(even) td{background:#F7FAFD}
 .mat td.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:9px}
 .mat td.c{text-align:center}
@@ -168,7 +173,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .stamp .st-note{margin-top:auto;padding:4px 6px;font-size:7.2px;font-style:italic;color:#5A6B85;border-top:1px dashed #B9C7DA}
 .decl .place{font-style:normal;font-weight:700;font-size:6.8px;letter-spacing:.06em;text-transform:uppercase}
 .sign{flex:1;border:1px solid #B9C7DA;display:flex;flex-direction:column;align-items:center}
-.sign img{height:74px;margin:6px 0 2px;object-fit:contain}
+.sign img{height:64px;margin:6px 0 2px;object-fit:contain}
 .sign .cap{margin-top:auto;width:100%;background:#EEF4FA;border-top:1px solid #B9C7DA;text-align:center;color:#12357A;font-weight:700;font-size:8px;padding:4px}
 .thanks{background:#12357A;color:#fff;text-align:center;font-size:7.5px;padding:5px;letter-spacing:.03em}
 .draftmark{color:#B45309}
@@ -209,7 +214,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   body::before{display:none}
   body>*:not(#printArea){display:none!important}
   #printArea{display:block!important}
-  #printArea .sheet{-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid}
+  #printArea .sheet{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-after:page;page-break-after:always}
+  #printArea .sheet:last-child{break-after:auto;page-break-after:auto}
 }
 
 </style>
@@ -373,7 +379,7 @@ function buildForm(){
       h+=`<div class="items"><table><thead><tr><th style="width:30%">Description</th><th>Code</th><th>Pcs / Bundles</th><th>Gross Wt (MT)</th><th>Net Wt (MT)</th><th>Rcvd Pcs</th><th>Rcvd Gross Wt</th><th>Remarks</th><th></th></tr></thead><tbody>
       ${cur.items.map((it,i)=>`<tr>${["desc","code","pcs","gross","net","rpcs","rgross","rem"].map(k=>`<td><input id="it_${i}_${k}" data-item="${i}" data-ik="${k}" value="${esc(it[k])}"${["gross","net","rgross"].includes(k)?' class="num" inputmode="decimal"':""} aria-label="Line ${i+1} ${k}"></td>`).join("")}<td><button type="button" class="x" data-del="${i}" aria-label="Remove line ${i+1}"${cur.items.length<2?" disabled":""}>×</button></td></tr>`).join("")}
       </tbody></table></div>
-      <div class="totals"><button type="button" class="btn" id="bAddItem"${cur.items.length>=8?" disabled":""}>+ Add line</button>
+      <div class="totals"><button type="button" class="btn" id="bAddItem"${cur.items.length>=60?" disabled":""}>+ Add line</button>
       <span>Gross <b id="tg">${T.g.toFixed(3)}</b> MT</span><span>Net <b id="tn">${T.n.toFixed(3)}</b> MT</span><span>Rcvd <b id="tr">${T.r.toFixed(3)}</b> MT</span></div>`;
     }
     if(s.conds){
@@ -408,7 +414,7 @@ function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_bill
 $("form").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.bill){const was=cur.billTo;if(b.dataset.bill==="Other"&&was!=="Other"){const x=bill(cur);cur.billName=x.name;cur.billAddr=x.addr;cur.billGst=x.gst}cur.billTo=b.dataset.bill;rebuild();markDirty()}
-  else if(b.id==="bAddItem"){if(cur.items.length<8){cur.items.push(blankItem());rebuild();markDirty();$(`it_${cur.items.length-1}_desc`)?.focus()}}
+  else if(b.id==="bAddItem"){if(cur.items.length<60){cur.items.push(blankItem());rebuild();markDirty();$(`it_${cur.items.length-1}_desc`)?.focus()}}
   else if(b.dataset.del!==undefined){cur.items.splice(+b.dataset.del,1);if(!cur.items.length)cur.items.push(blankItem());rebuild();markDirty()}
   else if(b.dataset.cond){const k=b.dataset.cond,v=cur.cond[k]||"";cur.cond[k]=v===""?"✓":v==="✓"?"✗":"";b.textContent=cur.cond[k]||"–";b.className=cur.cond[k]==="✓"?"yes":cur.cond[k]==="✗"?"no":"";markDirty()}
 });
@@ -418,16 +424,20 @@ function rebuild(){const y=window.scrollY;buildForm();window.scrollTo(0,y)}
 function kv(rows){
   return `<table><colgroup>${"<col style='width:10.5%'><col style='width:14.5%'>".repeat(4)}</colgroup>${rows.map(r=>`<tr>${r.map(([l,v,s,c])=>`<td class="l">${esc(l)}</td><td class="v ${c||""}" colspan="${s||1}">${v??""}</td>`).join("")}</tr>`).join("")}</table>`;
 }
-function sheetHTML(L){
-  const b=bill(L),T=totals(L),items=L.items||[],rows=Math.max(6,items.length);
+const SHEET_H=1123;let MEAS=null;
+function measureFits(html){
+  if(!MEAS){MEAS=document.createElement("div");MEAS.setAttribute("aria-hidden","true");MEAS.style.cssText="position:fixed;left:-30000px;top:0;visibility:hidden;pointer-events:none";document.body.appendChild(MEAS)}
+  MEAS.innerHTML=html;const s=MEAS.firstElementChild;return s.scrollHeight<=s.clientHeight;
+}
+function sheetPages(L){
+  const b=bill(L),T=totals(L),items=(L.items||[]).slice();
   const no=L.lrNo?esc(L.lrNo):`<span class="draftmark">${esc(shownNext())}${listLoaded||shownNext()!=="Loading…"?"*":""}</span>`;
   const e=k=>esc(L[k]);
-  let mat="";for(let i=0;i<rows;i++){const it=items[i]||{};const has=Object.values(it).some(x=>x);
-    mat+=`<tr><td class="c" style="color:#5A6B85">${i+1}</td><td colspan="4" style="font-size:8.5px">${esc(it.desc)}</td><td class="c">${esc(it.code)}</td><td class="c">${esc(it.pcs)}</td><td class="n">${has?f3(it.gross):""}</td><td class="n">${has?f3(it.net):""}</td><td class="c">${esc(it.rpcs)}</td><td class="n">${it.rgross!==""&&it.rgross!=null?f3(it.rgross):""}</td><td style="font-size:8px">${esc(it.rem)}</td></tr>`}
+  const rowHTML=(it,i)=>{const has=Object.values(it||{}).some(x=>x);it=it||{};
+    return `<tr><td class="c" style="color:#5A6B85">${i+1}</td><td colspan="4" style="font-size:8.5px">${esc(it.desc)}</td><td class="c">${esc(it.code)}</td><td class="c">${esc(it.pcs)}</td><td class="n">${has?f3(it.gross):""}</td><td class="n">${has?f3(it.net):""}</td><td class="c">${esc(it.rpcs)}</td><td class="n">${it.rgross!==""&&it.rgross!=null?f3(it.rgross):""}</td><td style="font-size:8px">${esc(it.rem)}</td></tr>`};
   const ct=i=>{const v=L.cond?.[i]||"";return `<td class="t ${v==="✓"?"yes":v==="✗"?"no":""}">${v}</td>`};
   let conds="";for(let i=0;i<5;i++)conds+=`<tr><td>${i+1}. ${CONDS[i]}</td>${ct(i+1)}<td>${i+6}. ${CONDS[i+5]}</td>${ct(i+6)}</tr>`;
-  return `<div class="sheet">
-  <div class="sh-head"><img class="sh-logo" src="${LOGO}" alt="">
+  const HEAD=`<div class="sh-head"><img class="sh-logo" src="${LOGO}" alt="">
     <div class="sh-co"><div class="sh-name">ADITYA TRANSPORT</div>
       <div class="sh-sub">Jalindar Smruti, Shiwajiwadi, In Front of Sun Harmony, Moshi, Pune - 412105</div>
       <div class="sh-contact">Ph: 8007500060 &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; www.adityatransport.com</div><div class="sh-contact">GSTIN: 27EYZPS6008D1ZT</div></div>
@@ -435,7 +445,8 @@ function sheetHTML(L){
       <tr><td class="l">LR No.</td><td class="no">${no}</td></tr><tr><td class="l">LR Date</td><td class="c">${fd(L.date)}</td></tr>
       <tr><td class="l">Freight</td><td class="c" style="color:#B45309">${e("freight")}</td></tr></table></div></div>
   <div class="sh-bar"></div>
-  <div class="sec">Shipment details</div>
+  `;
+  const TOP=`<div class="sec">Shipment details</div>
   ${kv([[["Vehicle No.",e("veh"),1,"b"],["Transhipped Vehicle",e("tveh")],["Driver Name",e("driver")],["Driver Mobile",e("driverMob")]],
        [["Plant Code",e("plant")],["Vendor Code",e("vendor")],["Delivery No.",e("dno")],["Consignee Code",e("ccode")]],
        [["Loading Point",e("lp"),3],["Destination",e("dest"),3]]])}
@@ -451,11 +462,8 @@ function sheetHTML(L){
   ${kv([[["GST Inv. No.",e("inv")],["Inv. Date",fd(L.invDate)],["P.O. No.",e("po")],["P.O. Date",fd(L.poDate)]],
        [["Inv. Value (Rs.)",inr(L.invVal)],["Incoterms",e("inco")],["E-Way Bill No.",e("ewb")],["E-Way Valid Upto",fd(L.ewbValid)]],
        [["L/C No.",e("lc")],["L/C Date",fd(L.lcDate)],["L/C Bank",e("lcBank")],["Road Permit",e("permit")]]])}
-  <div class="sec">Material details</div>
-  <table class="mat"><colgroup><col style="width:5%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:9%"><col style="width:9%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:7%"><col style="width:10%"><col style="width:13%"></colgroup>
-    <tr><th>S.No.</th><th colspan="4">Description</th><th>Code</th><th>Pcs / Bundles</th><th>Gross Wt (MT)</th><th>Net Wt (MT)</th><th>Rcvd Pcs</th><th>Rcvd Gross Wt (MT)</th><th>Quality Remarks</th></tr>
-    ${mat}<tr class="tot"><td colspan="7" style="text-align:right;letter-spacing:.1em">TOTAL</td><td class="n">${T.g.toFixed(3)}</td><td class="n">${T.n.toFixed(3)}</td><td></td><td class="n">${T.r.toFixed(3)}</td><td></td></tr></table>
-  <div class="sec">Delivery &amp; receipt</div>
+  `;
+  const FOOT=`<div class="sec">Delivery &amp; receipt</div>
   ${kv([[["VTS Reach Date",fd(L.vtsDate)],["VTS Reach Time",e("vtsTime")],["GRN No.",e("grn")],["GRN Date",fd(L.grnDate)]],
        [["Received By",e("rcvBy")],["Contact No.",e("rcvContact")],["Received Date",fd(L.rcvDate)],["Received Time",e("rcvTime")]]])}
   <div class="lower"><table class="conds-t"><colgroup><col><col style="width:26px"><col><col style="width:26px"></colgroup><tr><th colspan="4">Item condition on arrival</th></tr>${conds}</table>
@@ -464,16 +472,47 @@ function sheetHTML(L){
   <div class="spacer"></div>
   <div class="foot"><div class="decl"><span class="tt">Terms of carriage</span><ol><li>Goods are carried subject to the transport contract with the consignor and the Carriage by Road Act, 2007.</li><li>The carrier is not liable for loss or damage caused by natural calamity, fire, riot, accident beyond its control, improper or insufficient packing, or the inherent nature of the goods.</li><li>Any shortage or damage must be recorded on this LR at the time of delivery. Claims must be made in writing within 7 days of delivery; claims made later will not be accepted.</li><li>Subject to Pune jurisdiction.</li></ol></div>
     <div class="sign">${SIGN?`<img src="${SIGN}" alt="">`:`<div style="height:82px"></div>`}<div class="cap">Authorised Signatory &nbsp;|&nbsp; As Carrier</div></div></div>
-  <div class="thanks">Thank you for choosing Aditya Transport &nbsp;|&nbsp; www.adityatransport.com &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; 8007500060</div>
-</div>`;
+  `;
+  const THANKS=`<div class="thanks">Thank you for choosing Aditya Transport &nbsp;|&nbsp; www.adityatransport.com &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; 8007500060</div>`;
+  const pageTag=`<div class="pgno">Page {{P}} of {{N}}</div>`;
+  const mat=(rowIdx,last,cont)=>`<div class="sec">Material details${cont?` <span class="h">· continued</span>`:""}</div>
+  <table class="mat"><colgroup><col style="width:5%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:9%"><col style="width:9%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:7%"><col style="width:10%"><col style="width:13%"></colgroup>
+    <tr><th>S.No.</th><th colspan="4">Description</th><th>Code</th><th>Pcs / Bundles</th><th>Gross Wt (MT)</th><th>Net Wt (MT)</th><th>Rcvd Pcs</th><th>Rcvd Gross Wt (MT)</th><th>Quality Remarks</th></tr>
+    ${rowIdx.map(i=>rowHTML(items[i],i)).join("")}${last
+      ?`<tr class="tot"><td colspan="7" style="text-align:right;letter-spacing:.1em">TOTAL</td><td class="n">${T.g.toFixed(3)}</td><td class="n">${T.n.toFixed(3)}</td><td></td><td class="n">${T.r.toFixed(3)}</td><td></td></tr>`
+      :`<tr class="more"><td colspan="12">Continued on next page</td></tr>`}</table>`;
+  const page=(first,rowIdx,last,cont,multi)=>`<div class="sheet">${HEAD}${multi?pageTag:""}${first?TOP:""}${mat(rowIdx,last,cont)}${last?FOOT:`<div class="spacer"></div>`}${THANKS}</div>`;
+  // Single page: pad to at least 6 lines, as before
+  while(items.length<6)items.push({});
+  const allIdx=items.map((_,i)=>i);
+  const single=page(true,allIdx,true,false,false);
+  if(measureFits(single))return[single];
+  // Several pages: fill each page with as many lines as fit, keep the footer on the last page
+  const real=items.map((it,i)=>Object.values(it).some(x=>x)?i:-1).filter(i=>i>=0);
+  const list=real.length?real:allIdx;
+  const pages=[];let i=0,first=true,guard=0;
+  while(guard++<200){
+    const take=[];
+    while(i<list.length){const t=take.concat([list[i]]);if(measureFits(page(first,t,false,!first,true))){take.push(list[i]);i++}else break}
+    if(!take.length&&i<list.length){take.push(list[i]);i++}
+    if(i>=list.length){
+      let ok=false;
+      while(true){if(measureFits(page(first,take,true,!first,true))){ok=true;break}
+        if(take.length<=1)break;take.pop();i--;}
+      if(ok&&i>=list.length){pages.push(page(first,take,true,!first,true));break}
+    }
+    pages.push(page(first,take,false,!first,true));first=false;
+  }
+  const N=pages.length;return pages.map((p,k)=>p.replace("{{P}}",k+1).replace("{{N}}",N));
 }
+function sheetHTML(L){return sheetPages(L).join("")}
 let raf=0;function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(renderPreview)}
 function renderPreview(){
   $("pv").innerHTML=sheetHTML(cur);fit();
   $("pvNote").textContent=cur.lrNo?"":"* number is assigned when you save";
   $("lrNoTxt").textContent=cur.lrNo||(listLoaded?nextNo()+" (next)":(shownNext()==="Loading…"?"Loading…":shownNext()+" (checking…)"));
 }
-function fit(){const w=$("pvWrap").clientWidth;if(!w)return;const s=w/794,sh=$("pv").firstElementChild;if(sh){sh.style.transform=`scale(${s})`;$("pvWrap").style.height=(1123*s)+"px"}}
+function fit(){const w=$("pvWrap").clientWidth;if(!w)return;const s=w/794,pv=$("pv");pv.style.width="794px";pv.style.transformOrigin="top left";pv.style.transform=`scale(${s})`;$("pvWrap").style.height=(pv.offsetHeight*s)+"px"}
 new ResizeObserver(fit).observe($("pvWrap"));
 
 /* ---------- Status, toast ---------- */
@@ -606,9 +645,13 @@ async function makePdf(scale){
   const host=document.createElement("div");host.style.cssText="position:fixed;left:-12000px;top:0;";host.innerHTML=sheetHTML(cur);document.body.appendChild(host);
   try{
     await imagesReady(host);
-    const canvas=await html2canvas(host.firstElementChild,{scale:scale||2.4,backgroundColor:"#ffffff",logging:false});
     const doc=new window.jspdf.jsPDF({unit:"mm",format:"a4",compress:true});
-    doc.addImage(canvas.toDataURL("image/jpeg",0.9),"JPEG",0,0,210,297);
+    const sheets=[...host.querySelectorAll(".sheet")];
+    for(let k=0;k<sheets.length;k++){
+      const canvas=await html2canvas(sheets[k],{scale:scale||2.4,backgroundColor:"#ffffff",logging:false});
+      if(k)doc.addPage();
+      doc.addImage(canvas.toDataURL("image/jpeg",0.9),"JPEG",0,0,210,297);
+    }
     return doc;
   }finally{host.remove()}
 }
@@ -731,6 +774,7 @@ $("tForm").onclick=()=>view("form");$("tPrev").onclick=()=>view("preview");view(
   let draft=null;try{draft=JSON.parse(localStorage.getItem("lrDraft")||"null")}catch(e){}
   if(draft&&typeof draft==="object"){cur=Object.assign(blankLR(),draft);dirty=true}
   buildForm();schedule();status();
+  try{document.fonts.ready.then(()=>schedule())}catch(e){}
   if(!API||API.indexOf("script.google.com")<0){showLock("Setup needed: paste your Google Sheet web app link into config.js on GitHub.");return}
   try{token=localStorage.getItem("lrToken")||""}catch(e){}
   if(token){startSession().catch(e=>{if(e.code!=="auth")showLock(e.message)})}else showLock("");
