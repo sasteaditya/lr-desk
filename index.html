@@ -503,7 +503,7 @@ async function sendCode(){
   lockMsg("Sending your code… this can take up to 15 seconds.","info");
   try{
     await api("requestCode",{email:em},40000);
-    lockMsg("Code sent to your email. It may take a minute to arrive, so check Spam too.","ok");
+    lockMsg("If this email is on the LR Desk access list, a code is on its way. It can take a minute, so check Spam too. No email after 2 minutes? Ask the admin to add this email.","ok");
     resendAt=Date.now()+30000;
   }catch(e){
     lockMsg(e.code==="limit"?e.message+" If you already received a code in the last 10 minutes, you can still enter it.":e.message+" Tap Resend code to try again.","err");
