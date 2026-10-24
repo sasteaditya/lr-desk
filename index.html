@@ -617,10 +617,18 @@ async function verifyCode(){
   finally{setBusy($("bVerify"),false,"Sign in")}
 }
 async function startSession(j){
-  if(!j){j=await api("me")}
+  if(!j||!j.user){j=await api("me")}
+  if(!j||!j.user||!j.user.email){
+    // The Sheet answered, but not with the signed-in user. Show what it said so the cause is visible.
+    const said=j&&(j.message||j.error)?` It replied: "${j.message||j.error}".`:"";
+    try{console.warn("LR Desk: unexpected sign-in reply",j)}catch(_){}
+    const err=new Error("The Google Sheet did not confirm your sign-in."+said+" Ask the admin to check the Apps Script deployment, then sign in again.");
+    token="";try{localStorage.removeItem("lrToken")}catch(_){}
+    throw err;
+  }
   me=j.user;settings=j.settings||settings;SIGN=j.sign||"";unlocked=true;
-  $("lock").hidden=true;$("who").textContent=`${me.name||me.email} · ${me.role}`;$("who").title=me.email;
-  document.body.dataset.role=me.role;status();
+  $("lock").hidden=true;$("who").textContent=`${me.name||me.email} · ${me.role||"Staff"}`;$("who").title=me.email;
+  document.body.dataset.role=me.role||"Staff";status();
   await refresh(true);
 }
 function signOut(msg){
