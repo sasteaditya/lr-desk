@@ -152,9 +152,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .sh-sub{color:#5A6B85;font-size:9.4px}
 .sh-contact{font-size:9.4px;font-weight:600;color:#1F2937}
 .sh-box{width:224px}
-.sh-qr{width:80px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
-.sh-qr img{width:74px;height:74px;image-rendering:pixelated;display:block}
-.sh-qr span{font-size:7px;font-weight:700;color:#12357A;letter-spacing:.06em;text-transform:uppercase}
+.sh-qr{width:86px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.sh-qr img{width:70px;height:70px;image-rendering:pixelated;display:block}
+.sh-qr span{font-size:6.6px;font-weight:700;color:#12357A;letter-spacing:.04em;text-transform:uppercase;text-align:center;line-height:1.25}
 .qr-ph{width:74px;height:74px;border:1px dashed #B9C7DA;border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:7px;color:#5A6B85;line-height:1.3;padding:4px}
 .sh-boxt{background:#12357A;color:#fff;font-family:"Archivo",Arial,sans-serif;font-weight:800;font-size:15px;text-align:center;letter-spacing:.08em;padding:6px 0}
 .sh-box td{height:20px}
@@ -453,7 +453,7 @@ function qrHTML(L){
   if(typeof qrcode!=="function")return `<div class="qr-ph">Verify code<br><b>${esc(L.vk)}</b></div>`;
   let src=QR_CACHE.get(url);
   if(!src){try{const q=qrcode(0,"M");q.addData(url);q.make();src=q.createDataURL(4,0);QR_CACHE.set(url,src)}catch(e){return `<div class="qr-ph">Verify code<br><b>${esc(L.vk)}</b></div>`}}
-  return `<img src="${src}" alt="Scan to verify this LR"><span>Scan to verify</span>`;
+  return `<img src="${src}" alt="Scan to verify this LR and track delivery"><span>Scan to verify<br>&amp; track delivery</span>`;
 }
 const SHEET_H=1123;let MEAS=null;
 function measureFits(html){
