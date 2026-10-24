@@ -459,7 +459,12 @@ function kv(rows){
   return `<table><colgroup>${"<col style='width:10.5%'><col style='width:14.5%'>".repeat(4)}</colgroup>${rows.map(r=>`<tr>${r.map(([l,v,s,c])=>`<td class="l">${esc(l)}</td><td class="v ${c||""}" colspan="${s||1}">${v??""}</td>`).join("")}</tr>`).join("")}</table>`;
 }
 const QR_CACHE=new Map();
-function verifyUrl(L){try{return new URL("verify.html?lr="+encodeURIComponent(L.lrNo)+"&k="+encodeURIComponent(L.vk),location.href).href}catch(e){return ""}}
+const TRACK_DEFAULT="https://www.adityatransport.com/track";
+function verifyUrl(L){
+  // Public QR / tracking link lives on the main website (Settings > Tracking Page)
+  const base=(typeof settings!=="undefined"&&settings.trackUrl&&/^https:\/\//.test(settings.trackUrl))?settings.trackUrl:TRACK_DEFAULT;
+  return base+"?lr="+encodeURIComponent(L.lrNo)+"&k="+encodeURIComponent(L.vk);
+}
 function qrHTML(L){
   if(!L.lrNo||!L.vk)return `<div class="qr-ph">QR code appears after saving</div>`;
   const url=verifyUrl(L);
