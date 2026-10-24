@@ -90,6 +90,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 #pv .sheet+.sheet{margin-top:18px}
 .sheet>*{flex-shrink:0}
 .sheet>.spacer{flex:1 1 auto}
+.sheet>.rembox{flex:1 1 auto;min-height:36px;display:flex;border:1px solid #B9C7DA}
+.rembox .rl{width:10.5%;flex:none;background:#EEF4FA;color:#5A6B85;font-size:6.6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:6px;border-right:1px solid #B9C7DA}
+.rembox .rv{flex:1;padding:5px 7px;font-size:8.5px;white-space:pre-wrap;overflow-wrap:anywhere;color:#111827}
 .pgno{align-self:flex-end;font-size:7.5px;font-weight:700;color:#5A6B85;letter-spacing:.06em;text-transform:uppercase;margin:-3px 0 -2px}
 .mat tr.more td{text-align:center;font-style:italic;color:#5A6B85;background:#EEF4FA!important;font-size:8px}
 
@@ -127,55 +130,55 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* ---------- The printed LR (always paper white, fixed brand colours) ---------- */
-.sheet{width:794px;height:1123px;background:#FFFFFF;color:#1F2937;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:9.5px;padding:22px 30px 18px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.sheet{width:794px;height:1123px;background:#FFFFFF;color:#1F2937;font-family:"IBM Plex Sans",Arial,sans-serif;font-size:10.5px;padding:22px 30px 18px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
 .sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
 .sheet td,.sheet th{border:1px solid #B9C7DA;padding:2px 6px;height:19px;vertical-align:middle;overflow-wrap:anywhere;line-height:1.25}
-.sheet td.l{background:#EEF4FA;color:#5A6B85;font-size:6.6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.sheet td.l{background:#EEF4FA;color:#5A6B85;font-size:7.8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .sheet td.v{color:#111827;font-weight:500}
 .sheet td.b{font-weight:700}
 .sh-head{display:flex;align-items:stretch;gap:14px}
 .sh-logo{width:90px;height:78px;object-fit:contain}
 .sh-co{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px}
 .sh-name{font-family:"Archivo","Arial Narrow",Arial,sans-serif;font-weight:800;font-size:30px;color:#12357A;letter-spacing:.01em;line-height:1}
-.sh-sub{color:#5A6B85;font-size:8.5px}
-.sh-contact{font-size:8.5px;font-weight:600;color:#1F2937}
+.sh-sub{color:#5A6B85;font-size:9.4px}
+.sh-contact{font-size:9.4px;font-weight:600;color:#1F2937}
 .sh-box{width:236px}
 .sh-boxt{background:#12357A;color:#fff;font-family:"Archivo",Arial,sans-serif;font-weight:800;font-size:15px;text-align:center;letter-spacing:.08em;padding:6px 0}
 .sh-box td{height:20px}
 .sh-box td.no{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;color:#12357A;text-align:center}
 .sh-box td.c{text-align:center;font-weight:700}
 .sh-bar{height:4px;background:#3FA0DD;margin:1px 0 0}
-.sec{background:#12357A;color:#fff;font-weight:700;font-size:8px;letter-spacing:.11em;text-transform:uppercase;padding:3.5px 8px}
+.sec{background:#12357A;color:#fff;font-weight:700;font-size:8.8px;letter-spacing:.11em;text-transform:uppercase;padding:3.5px 8px}
 .sec.sky{background:#3FA0DD}
 .sec .h{text-transform:none;letter-spacing:0;font-weight:500;opacity:.9;margin-left:6px}
 .duo{display:flex;gap:0}
 .duo>.sec{flex:1}
-.mat th{background:#DCE9F6;color:#12357A;font-size:6.8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;height:24px}
+.mat th{background:#DCE9F6;color:#12357A;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;height:24px}
 .mat td{height:18px}
 .mat tr:nth-child(even) td{background:#F7FAFD}
-.mat td.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:9px}
+.mat td.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:9.9px}
 .mat td.c{text-align:center}
 .mat tr.tot td{background:#12357A;color:#fff;font-weight:700;border-color:#12357A}
 .lower{display:flex;gap:8px}
 .lower .conds-t{flex:1.1}
 .lower .stamp{flex:1;border:1px solid #B9C7DA;display:flex;flex-direction:column}
-.stamp .st-h,.conds-t th{background:#DCE9F6;color:#12357A;font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:4px 6px;height:auto}
+.stamp .st-h,.conds-t th{background:#DCE9F6;color:#12357A;font-size:8.3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:4px 6px;height:auto}
 .stamp .st-h{text-align:center}
-.conds-t td{font-size:8.5px;height:19px}
-.conds-t td.t{width:26px;text-align:center;font-weight:700;font-size:11px}
+.conds-t td{font-size:9.4px;height:19px}
+.conds-t td.t{width:26px;text-align:center;font-weight:700;font-size:12.1px}
 .t.yes{color:#15803D} .t.no{color:#B42318}
 .spacer{flex:1}
 .foot{display:flex;gap:8px}
-.decl{flex:1.1;background:#EEF4FA;border:1px solid #B9C7DA;padding:8px 10px;font-style:italic;color:#5A6B85;font-size:8px;line-height:1.45;display:flex;flex-direction:column;justify-content:space-between}
-.decl .tt{font-style:normal;font-weight:700;font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#12357A}
+.decl{flex:1.1;background:#EEF4FA;border:1px solid #B9C7DA;padding:8px 10px;font-style:italic;color:#5A6B85;font-size:8.8px;line-height:1.45;display:flex;flex-direction:column;justify-content:space-between}
+.decl .tt{font-style:normal;font-weight:700;font-size:8.3px;letter-spacing:.08em;text-transform:uppercase;color:#12357A}
 .decl ol{margin:3px 0 0;padding-left:13px;font-style:normal;font-size:7.4px;line-height:1.4;color:#374151}
 .decl li{margin:0 0 1px}
-.stamp .st-note{margin-top:auto;padding:4px 6px;font-size:7.2px;font-style:italic;color:#5A6B85;border-top:1px dashed #B9C7DA}
-.decl .place{font-style:normal;font-weight:700;font-size:6.8px;letter-spacing:.06em;text-transform:uppercase}
+.stamp .st-note{margin-top:auto;padding:4px 6px;font-size:8.5px;font-style:italic;color:#5A6B85;border-top:1px dashed #B9C7DA}
+.decl .place{font-style:normal;font-weight:700;font-size:8px;letter-spacing:.06em;text-transform:uppercase}
 .sign{flex:1;border:1px solid #B9C7DA;display:flex;flex-direction:column;align-items:center}
 .sign img{height:64px;margin:6px 0 2px;object-fit:contain}
-.sign .cap{margin-top:auto;width:100%;background:#EEF4FA;border-top:1px solid #B9C7DA;text-align:center;color:#12357A;font-weight:700;font-size:8px;padding:4px}
-.thanks{background:#12357A;color:#fff;text-align:center;font-size:7.5px;padding:5px;letter-spacing:.03em}
+.sign .cap{margin-top:auto;width:100%;background:#EEF4FA;border-top:1px solid #B9C7DA;text-align:center;color:#12357A;font-weight:700;font-size:8.8px;padding:4px}
+.thanks{background:#12357A;color:#fff;text-align:center;font-size:8.8px;padding:5px;letter-spacing:.03em}
 .draftmark{color:#B45309}
 
 .lock{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;align-items:center;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -434,7 +437,7 @@ function sheetPages(L){
   const no=L.lrNo?esc(L.lrNo):`<span class="draftmark">${esc(shownNext())}${listLoaded||shownNext()!=="Loading…"?"*":""}</span>`;
   const e=k=>esc(L[k]);
   const rowHTML=(it,i)=>{const has=Object.values(it||{}).some(x=>x);it=it||{};
-    return `<tr><td class="c" style="color:#5A6B85">${i+1}</td><td colspan="4" style="font-size:8.5px">${esc(it.desc)}</td><td class="c">${esc(it.code)}</td><td class="c">${esc(it.pcs)}</td><td class="n">${has?f3(it.gross):""}</td><td class="n">${has?f3(it.net):""}</td><td class="c">${esc(it.rpcs)}</td><td class="n">${it.rgross!==""&&it.rgross!=null?f3(it.rgross):""}</td><td style="font-size:8px">${esc(it.rem)}</td></tr>`};
+    return `<tr><td class="c" style="color:#5A6B85">${i+1}</td><td colspan="4" style="font-size:9.4px">${esc(it.desc)}</td><td class="c">${esc(it.code)}</td><td class="c">${esc(it.pcs)}</td><td class="n">${has?f3(it.gross):""}</td><td class="n">${has?f3(it.net):""}</td><td class="c">${esc(it.rpcs)}</td><td class="n">${it.rgross!==""&&it.rgross!=null?f3(it.rgross):""}</td><td style="font-size:8.8px">${esc(it.rem)}</td></tr>`};
   const ct=i=>{const v=L.cond?.[i]||"";return `<td class="t ${v==="✓"?"yes":v==="✗"?"no":""}">${v}</td>`};
   let conds="";for(let i=0;i<5;i++)conds+=`<tr><td>${i+1}. ${CONDS[i]}</td>${ct(i+1)}<td>${i+6}. ${CONDS[i+5]}</td>${ct(i+6)}</tr>`;
   const HEAD=`<div class="sh-head"><img class="sh-logo" src="${LOGO}" alt="">
@@ -452,12 +455,12 @@ function sheetPages(L){
        [["Loading Point",e("lp"),3],["Destination",e("dest"),3]]])}
   <div class="duo"><div class="sec">Consignor (From)</div><div class="sec" style="border-left:1px solid #fff">Consignee (To)</div></div>
   ${kv([[["Name",e("cnorName"),3,"b"],["Name",e("cneeName"),3,"b"]],
-       [["Address",`<div style="min-height:24px;font-size:8.5px">${e("cnorAddr")}</div>`,3],["Address",`<div style="min-height:24px;font-size:8.5px">${e("cneeAddr")}</div>`,3]],
+       [["Address",`<div style="min-height:24px;font-size:9.4px">${e("cnorAddr")}</div>`,3],["Address",`<div style="min-height:24px;font-size:9.4px">${e("cneeAddr")}</div>`,3]],
        [["GSTIN",e("cnorGst"),3],["GSTIN",e("cneeGst"),3]]])}
   <div class="sec sky">Billed To<span class="h">· ${esc(L.billTo)}</span></div>
-  ${kv([[["Party Name",esc(b.name),5,"b"],["Bill To",esc(L.billTo),1,"b"]],
-       [["Address",`<span style="font-size:8.5px">${esc(b.addr)}</span>`,7]],
-       [["GSTIN",esc(b.gst)],["State / Code",e("billState")],["Contact",e("billContact")],["Party PAN",e("billPan")]]])}
+  ${kv([[["Party Name",esc(b.name),3,"b"],["Party PAN",e("billPan")],["Bill To",esc(L.billTo),1,"b"]],
+       [["Address",`<span style="font-size:9.4px">${esc(b.addr)}</span>`,7]],
+       [["GSTIN",esc(b.gst),3],["State / Code",e("billState")],["Contact",e("billContact")]]])}
   <div class="sec">Invoice &amp; order details</div>
   ${kv([[["GST Inv. No.",e("inv")],["Inv. Date",fd(L.invDate)],["P.O. No.",e("po")],["P.O. Date",fd(L.poDate)]],
        [["Inv. Value (Rs.)",inr(L.invVal)],["Incoterms",e("inco")],["E-Way Bill No.",e("ewb")],["E-Way Valid Upto",fd(L.ewbValid)]],
@@ -468,8 +471,7 @@ function sheetPages(L){
        [["Received By",e("rcvBy")],["Contact No.",e("rcvContact")],["Received Date",fd(L.rcvDate)],["Received Time",e("rcvTime")]]])}
   <div class="lower"><table class="conds-t"><colgroup><col><col style="width:26px"><col><col style="width:26px"></colgroup><tr><th colspan="4">Item condition on arrival</th></tr>${conds}</table>
     <div class="stamp"><div class="st-h">Receiver's stamp &amp; signature</div><div class="st-note">Received the above goods in good order and condition, except as noted above.</div></div></div>
-  ${kv([[["Remarks",`<div style="min-height:26px;font-size:8.5px">${e("remarks")}</div>`,7]]])}
-  <div class="spacer"></div>
+  <div class="rembox"><div class="rl">Remarks</div><div class="rv">${e("remarks")}</div></div>
   <div class="foot"><div class="decl"><span class="tt">Terms of carriage</span><ol><li>Goods are carried subject to the transport contract with the consignor and the Carriage by Road Act, 2007.</li><li>The carrier is not liable for loss or damage caused by natural calamity, fire, riot, accident beyond its control, improper or insufficient packing, or the inherent nature of the goods.</li><li>Any shortage or damage must be recorded on this LR at the time of delivery. Claims must be made in writing within 7 days of delivery; claims made later will not be accepted.</li><li>Subject to Pune jurisdiction.</li></ol></div>
     <div class="sign">${SIGN?`<img src="${SIGN}" alt="">`:`<div style="height:82px"></div>`}<div class="cap">Authorised Signatory &nbsp;|&nbsp; As Carrier</div></div></div>
   `;
