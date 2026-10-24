@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="config.js"></script>
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -83,6 +84,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .cond button{width:34px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel);font-weight:700;cursor:pointer}
 .cond button.yes{color:var(--ok);border-color:var(--ok)} .cond button.no{color:var(--danger);border-color:var(--danger)}
 
+ .stat-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px}
+.stat-row .f{min-width:150px}
+.stat-row .status{flex:1 1 220px;align-self:center}
+.chip{display:inline-block;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px;white-space:nowrap;align-self:center}
+.chip.sm{padding:2px 8px;font-size:11px;font-family:var(--body);vertical-align:middle;margin-left:4px}
+.chip.transit{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.chip.done{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.chip.draft{background:var(--chip);color:var(--muted)}
 .preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 78px);align-self:start;min-width:0}
 .pv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:var(--muted)}
 .pv-wrap{width:100%;overflow:hidden;border-radius:6px;box-shadow:0 1px 2px rgba(15,30,60,.12),0 8px 28px rgba(15,30,60,.14)}
@@ -136,13 +145,17 @@ button,input,select,textarea{font:inherit;color:inherit}
 .sheet td.l{background:#EEF4FA;color:#5A6B85;font-size:7.8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .sheet td.v{color:#111827;font-weight:500}
 .sheet td.b{font-weight:700}
-.sh-head{display:flex;align-items:stretch;gap:14px}
+.sh-head{display:flex;align-items:stretch;gap:10px}
 .sh-logo{width:90px;height:78px;object-fit:contain}
-.sh-co{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px}
-.sh-name{font-family:"Archivo","Arial Narrow",Arial,sans-serif;font-weight:800;font-size:30px;color:#12357A;letter-spacing:.01em;line-height:1}
+.sh-co{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.sh-name{font-family:"Archivo","Arial Narrow",Arial,sans-serif;font-weight:800;font-size:27px;color:#12357A;letter-spacing:.01em;line-height:1}
 .sh-sub{color:#5A6B85;font-size:9.4px}
 .sh-contact{font-size:9.4px;font-weight:600;color:#1F2937}
-.sh-box{width:236px}
+.sh-box{width:224px}
+.sh-qr{width:80px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.sh-qr img{width:74px;height:74px;image-rendering:pixelated;display:block}
+.sh-qr span{font-size:7px;font-weight:700;color:#12357A;letter-spacing:.06em;text-transform:uppercase}
+.qr-ph{width:74px;height:74px;border:1px dashed #B9C7DA;border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:7px;color:#5A6B85;line-height:1.3;padding:4px}
 .sh-boxt{background:#12357A;color:#fff;font-family:"Archivo",Arial,sans-serif;font-weight:800;font-size:15px;text-align:center;letter-spacing:.08em;padding:6px 0}
 .sh-box td{height:20px}
 .sh-box td.no{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;color:#12357A;text-align:center}
@@ -316,6 +329,7 @@ const blankLR=()=>({lrNo:"",date:today(),freight:"Pre-Paid",billTo:"Consignee",b
 
 const SECTIONS=[
  {t:"LR details",f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["Pre-Paid","To Pay","To Be Billed"]}]},
+ {t:"Delivery status",status:1},
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
    {k:"lp",l:"Loading Point",w:2,list:"dlPlace"},{k:"dest",l:"Destination",w:2,list:"dlPlace"}]},
@@ -335,9 +349,9 @@ const SECTIONS=[
 let cur=blankLR(), dirty=false, all=[], settings={prefix:"ALF",start:1};
 
 function bill(L){
-  if(L.billTo==="Consignor")return{name:L.cnorName,addr:L.cnorAddr,gst:L.cnorGst};
-  if(L.billTo==="Consignee")return{name:L.cneeName,addr:L.cneeAddr,gst:L.cneeGst};
-  return{name:L.billName,addr:L.billAddr,gst:L.billGst};
+  if(L.billTo==="Consignor")return{name:L.cnorName,addr:L.cnorAddr,gst:L.cnorGst,email:L.cnorEmail};
+  if(L.billTo==="Consignee")return{name:L.cneeName,addr:L.cneeAddr,gst:L.cneeGst,email:L.cneeEmail};
+  return{name:L.billName,addr:L.billAddr,gst:L.billGst,email:L.billEmail};
 }
 function totals(L){let g=0,n=0,r=0;(L.items||[]).forEach(i=>{g+=num(i.gross)||0;n+=num(i.net)||0;r+=num(i.rgross)||0});return{g,n,r}}
 let listLoaded=false;
@@ -367,6 +381,7 @@ function buildForm(){
   SECTIONS.forEach(s=>{
     h+=`<section class="card"><h2>${s.t}${s.hint?`<span class="hint">· ${s.hint}</span>`:""}</h2>`;
     if(s.f)h+=`<div class="grid">${s.f.map(fieldHTML).join("")}</div>`;
+    if(s.status){h+=`<div id="statWrap">${statusHTML()}</div>`}
     if(s.billed){
       const b=bill(cur),auto=cur.billTo!=="Other";
       h+=`<div class="seg" role="group" aria-label="Bill to">${["Consignor","Consignee","Other"].map(o=>`<button type="button" data-bill="${o}" aria-pressed="${cur.billTo===o}">${o}</button>`).join("")}</div>
@@ -374,6 +389,7 @@ function buildForm(){
         <div class="f w2"><label for="i_billName">Party Name</label><input id="i_billName" data-k="billName" value="${esc(b.name)}"${auto?" disabled":""}></div>
         <div class="f w2"><label for="i_billGst">GSTIN</label><input id="i_billGst" data-k="billGst" data-up="1" value="${esc(b.gst)}"${auto?" disabled":""}></div>
         <div class="f w4"><label for="i_billAddr">Address</label><textarea id="i_billAddr" data-k="billAddr" rows="2"${auto?" disabled":""}>${esc(b.addr)}</textarea></div>
+        <div class="f w4"><label for="i_billEmail">Email (gets the "delivered" email)</label><input id="i_billEmail" data-k="billEmail" type="email" multiple value="${esc(b.email)}"${auto?" disabled":""}></div>
         ${fieldHTML({k:"billState",l:"State / Code"})}${fieldHTML({k:"billContact",l:"Contact",type:"tel"})}${fieldHTML({k:"billPan",l:"Party PAN",up:1,w:2})}
       </div>`;
     }
@@ -407,16 +423,18 @@ $("form").addEventListener("input",e=>{
   if(t.dataset.k){let v=t.value;if(t.dataset.up){v=v.toUpperCase();if(t.value!==v){const p=t.selectionStart;t.value=v;try{t.setSelectionRange(p,p)}catch(_){}}}
     cur[t.dataset.k]=v;
     if(t.dataset.party){const p=window._parties?.get(v);if(p){const pre=t.dataset.party;if(!cur[pre+"Addr"]){cur[pre+"Addr"]=p.addr||"";$("i_"+pre+"Addr").value=cur[pre+"Addr"]}if(!cur[pre+"Gst"]){cur[pre+"Gst"]=p.gst||"";$("i_"+pre+"Gst").value=cur[pre+"Gst"]}if(!cur[pre+"Email"]&&p.email){cur[pre+"Email"]=p.email;$("i_"+pre+"Email").value=p.email}}}
-    if(/^(cnor|cnee)/.test(t.dataset.k)&&cur.billTo!=="Other")syncBill();
+    if(/^(cnor|cnee)/.test(t.dataset.k)&&cur.billTo!=="Other")syncBill();if(t.dataset.k.endsWith("Email"))refreshStatusNote();
     markDirty();
   }
   if(t.dataset.item!==undefined){cur.items[+t.dataset.item][t.dataset.ik]=t.value;const T=totals(cur);$("tg").textContent=T.g.toFixed(3);$("tn").textContent=T.n.toFixed(3);$("tr").textContent=T.r.toFixed(3);markDirty()}
 });
 $("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;markDirty()}});
-function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||""}
+function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||""}
 $("form").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
-  if(b.dataset.bill){const was=cur.billTo;if(b.dataset.bill==="Other"&&was!=="Other"){const x=bill(cur);cur.billName=x.name;cur.billAddr=x.addr;cur.billGst=x.gst}cur.billTo=b.dataset.bill;rebuild();markDirty()}
+  if(b.dataset.bill){const was=cur.billTo;if(b.dataset.bill==="Other"&&was!=="Other"){const x=bill(cur);cur.billName=x.name;cur.billAddr=x.addr;cur.billGst=x.gst;cur.billEmail=x.email}cur.billTo=b.dataset.bill;rebuild();markDirty()}
+  else if(b.id==="bDeliver"){markDelivered(cur.lrNo,true,$("i_delDate").value)}
+  else if(b.id==="bUndeliver"){markDelivered(cur.lrNo,false)}
   else if(b.id==="bAddItem"){if(cur.items.length<60){cur.items.push(blankItem());rebuild();markDirty();$(`it_${cur.items.length-1}_desc`)?.focus()}}
   else if(b.dataset.del!==undefined){cur.items.splice(+b.dataset.del,1);if(!cur.items.length)cur.items.push(blankItem());rebuild();markDirty()}
   else if(b.dataset.cond){const k=b.dataset.cond,v=cur.cond[k]||"";cur.cond[k]=v===""?"✓":v==="✓"?"✗":"";b.textContent=cur.cond[k]||"–";b.className=cur.cond[k]==="✓"?"yes":cur.cond[k]==="✗"?"no":"";markDirty()}
@@ -426,6 +444,16 @@ function rebuild(){const y=window.scrollY;buildForm();window.scrollTo(0,y)}
 /* ---------- Sheet ---------- */
 function kv(rows){
   return `<table><colgroup>${"<col style='width:10.5%'><col style='width:14.5%'>".repeat(4)}</colgroup>${rows.map(r=>`<tr>${r.map(([l,v,s,c])=>`<td class="l">${esc(l)}</td><td class="v ${c||""}" colspan="${s||1}">${v??""}</td>`).join("")}</tr>`).join("")}</table>`;
+}
+const QR_CACHE=new Map();
+function verifyUrl(L){try{return new URL("verify.html?lr="+encodeURIComponent(L.lrNo)+"&k="+encodeURIComponent(L.vk),location.href).href}catch(e){return ""}}
+function qrHTML(L){
+  if(!L.lrNo||!L.vk)return `<div class="qr-ph">QR code appears after saving</div>`;
+  const url=verifyUrl(L);
+  if(typeof qrcode!=="function")return `<div class="qr-ph">Verify code<br><b>${esc(L.vk)}</b></div>`;
+  let src=QR_CACHE.get(url);
+  if(!src){try{const q=qrcode(0,"M");q.addData(url);q.make();src=q.createDataURL(4,0);QR_CACHE.set(url,src)}catch(e){return `<div class="qr-ph">Verify code<br><b>${esc(L.vk)}</b></div>`}}
+  return `<img src="${src}" alt="Scan to verify this LR"><span>Scan to verify</span>`;
 }
 const SHEET_H=1123;let MEAS=null;
 function measureFits(html){
@@ -440,11 +468,12 @@ function sheetPages(L){
     return `<tr><td class="c" style="color:#5A6B85">${i+1}</td><td colspan="4" style="font-size:9.4px">${esc(it.desc)}</td><td class="c">${esc(it.code)}</td><td class="c">${esc(it.pcs)}</td><td class="n">${has?f3(it.gross):""}</td><td class="n">${has?f3(it.net):""}</td><td class="c">${esc(it.rpcs)}</td><td class="n">${it.rgross!==""&&it.rgross!=null?f3(it.rgross):""}</td><td style="font-size:8.8px">${esc(it.rem)}</td></tr>`};
   const ct=i=>{const v=L.cond?.[i]||"";return `<td class="t ${v==="✓"?"yes":v==="✗"?"no":""}">${v}</td>`};
   let conds="";for(let i=0;i<5;i++)conds+=`<tr><td>${i+1}. ${CONDS[i]}</td>${ct(i+1)}<td>${i+6}. ${CONDS[i+5]}</td>${ct(i+6)}</tr>`;
+  const qrBlock=qrHTML(L);
   const HEAD=`<div class="sh-head"><img class="sh-logo" src="${LOGO}" alt="">
     <div class="sh-co"><div class="sh-name">ADITYA TRANSPORT</div>
-      <div class="sh-sub">Jalindar Smruti, Shiwajiwadi, In Front of Sun Harmony, Moshi, Pune - 412105</div>
-      <div class="sh-contact">Ph: 8007500060 &nbsp;|&nbsp; info@adityatransport.com &nbsp;|&nbsp; www.adityatransport.com</div><div class="sh-contact">GSTIN: 27EYZPS6008D1ZT</div></div>
-    <div class="sh-box"><div class="sh-boxt">LORRY RECEIPT</div><table><colgroup><col style="width:42%"><col></colgroup>
+      <div class="sh-sub">Jalindar Smruti, Shiwajiwadi, In Front of Sun Harmony,<br>Moshi, Pune - 412105</div>
+      <div class="sh-contact">Ph: 8007500060 &nbsp;|&nbsp; info@adityatransport.com</div><div class="sh-contact">www.adityatransport.com &nbsp;|&nbsp; GSTIN: 27EYZPS6008D1ZT</div></div>
+    <div class="sh-qr">${qrBlock}</div><div class="sh-box"><div class="sh-boxt">LORRY RECEIPT</div><table><colgroup><col style="width:42%"><col></colgroup>
       <tr><td class="l">LR No.</td><td class="no">${no}</td></tr><tr><td class="l">LR Date</td><td class="c">${fd(L.date)}</td></tr>
       <tr><td class="l">Freight</td><td class="c" style="color:#B45309">${e("freight")}</td></tr></table></div></div>
   <div class="sh-bar"></div>
@@ -630,7 +659,7 @@ async function save(){
     cur=j.lr;if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};
     const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i]=JSON.parse(JSON.stringify(cur));else all.unshift(JSON.parse(JSON.stringify(cur)));
     dirty=false;try{localStorage.removeItem("lrDraft")}catch(e){}
-    fillLists();renderList();status();schedule();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);if(isNew)setTimeout(autoEmail,400);return true;
+    fillLists();renderList();status();schedule();renderStatus();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);if(isNew)setTimeout(autoEmail,400);return true;
   }catch(e){if(e.code!=="auth")toast(e.message);return false}
   finally{busy(false)}
 }
@@ -723,23 +752,56 @@ function newLR(from){
   load(L);if(from){dirty=true;status()}
 }
 
+/* ---------- Delivery status ---------- */
+function billEmails(L){return splitEmails(bill(L).email).filter(okEmail)}
+function statusHTML(){
+  if(!cur.lrNo)return `<div class="stat-row"><span class="chip draft">Not saved</span><span class="status">Save the LR first. Its status starts as In Transit.</span></div>`;
+  if(cur.delivered)return `<div class="stat-row"><span class="chip done">Delivered${cur.deliveredOn?" · "+fd(cur.deliveredOn):""}</span>
+    <span class="status" id="statNote">${cur.deliveryEmailedAt?`Delivery email sent ${esc(cur.deliveryEmailedAt)}${cur.deliveryEmailedTo?" to "+esc(cur.deliveryEmailedTo):""}.`:"No delivery email was sent."}</span>
+    <button type="button" class="btn ghost" id="bUndeliver">Undo, back to In Transit</button></div>`;
+  return `<div class="stat-row"><span class="chip transit">In Transit</span>
+    <div class="f"><label for="i_delDate">Delivered on</label><input id="i_delDate" type="date" value="${today()}"></div>
+    <button type="button" class="btn primary" id="bDeliver">Mark as delivered</button>
+    <span class="status" id="statNote">${statusNote()}</span></div>`;
+}
+function statusNote(){
+  if(!settings.deliveryEmail)return "Delivery emails are switched off in Settings.";
+  const em=billEmails(cur);
+  return em.length?`Billed To party (${esc(em.join(", "))}) will get a "delivered" email.`:"No email for the Billed To party, so no delivery email will be sent.";
+}
+function renderStatus(){const w=$("statWrap");if(w)w.innerHTML=statusHTML()}
+function refreshStatusNote(){const n=$("statNote");if(n&&!cur.delivered)n.innerHTML=statusNote()}
+async function markDelivered(lrNo,on,date){
+  if(!unlocked){showLock("Sign in to update delivery status.");return}
+  if(lrNo===cur.lrNo&&dirty){if(!(await save()))return}
+  const btn=$(on?"bDeliver":"bUndeliver");if(btn)btn.disabled=true;
+  try{
+    const j=await api("setDelivered",{lrNo,delivered:on,date:date||today(),link:verifyUrl({lrNo,vk:(all.find(d=>d.lrNo===lrNo)||cur).vk})},60000);
+    const i=all.findIndex(d=>d.lrNo===lrNo);if(i>=0)all[i]=j.lr;
+    if(cur.lrNo===lrNo){["delivered","deliveredOn","deliveredBy","deliveryEmailedAt","deliveryEmailedTo"].forEach(k=>cur[k]=j.lr[k]);renderStatus()}
+    renderList();
+    toast(on?(j.emailedTo?`${lrNo} marked delivered. Email sent to ${j.emailedTo}`:`${lrNo} marked delivered${j.emailNote?". "+j.emailNote:""}`):`${lrNo} is back to In Transit`);
+  }catch(e){if(e.code!=="auth")toast(e.message);if(btn)btn.disabled=false}
+}
+
 /* ---------- Saved list ---------- */
 let confirmDel=null;
 function renderList(){
   const q=$("q").value.trim().toLowerCase();
-  const rows=all.filter(d=>!q||[d.lrNo,d.veh,d.cnorName,d.cneeName,d.billName,d.inv,d.dno].join(" ").toLowerCase().includes(q));
+  const rows=all.filter(d=>!q||[d.lrNo,d.veh,d.cnorName,d.cneeName,d.billName,d.inv,d.dno,d.delivered?"delivered":"in transit"].join(" ").toLowerCase().includes(q));
   $("cnt").textContent=all.length?`(${all.length})`:"";
   if(!all.length){$("list").innerHTML=`<div class="empty">No saved LRs yet.<br>Fill in the form and press <b>Save</b>. The first one gets ${esc(nextNo())}.</div>`;return}
   if(!rows.length){$("list").innerHTML=`<div class="empty">No LR matches “${esc(q)}”.</div>`;return}
-  $("list").innerHTML=rows.map(d=>{const T=totals(d);return `<div class="row${d.lrNo===cur.lrNo?" current":""}"><span class="no">${esc(d.lrNo)}</span><span class="status">${fd(d.date)}</span>
+  $("list").innerHTML=rows.map(d=>{const T=totals(d);return `<div class="row${d.lrNo===cur.lrNo?" current":""}"><span class="no">${esc(d.lrNo)} ${d.delivered?`<span class="chip done sm">Delivered</span>`:`<span class="chip transit sm">In Transit</span>`}</span><span class="status">${fd(d.date)}</span>
    <span class="meta">${esc(d.veh||"No vehicle")} · ${esc(d.cnorName||"?")} → ${esc(d.cneeName||"?")}${T.n?` · ${T.n.toFixed(3)} MT`:""}${d.inv?` · Inv ${esc(d.inv)}`:""}${d.createdBy?` · by ${esc(d.createdByName||d.createdBy)}`:""}</span>
    <div class="btns">${confirmDel===d.lrNo?`<span class="status dirty" style="align-self:center">Delete ${esc(d.lrNo)} for good?</span><button class="btn danger" data-delok="${esc(d.lrNo)}" type="button">Yes, delete</button><button class="btn" data-delno="1" type="button">Keep</button>`
-   :`<button class="btn" data-open="${esc(d.lrNo)}" type="button">Open</button><button class="btn" data-dup="${esc(d.lrNo)}" type="button">New trip from this</button>${isAdmin()?`<button class="btn danger ghost" data-ask="${esc(d.lrNo)}" type="button">Delete</button>`:""}`}</div></div>`}).join("");
+   :`<button class="btn" data-open="${esc(d.lrNo)}" type="button">Open</button><button class="btn" data-dup="${esc(d.lrNo)}" type="button">New trip from this</button>${d.delivered?"":`<button class="btn" data-deliver="${esc(d.lrNo)}" type="button">Mark delivered</button>`}${isAdmin()?`<button class="btn danger ghost" data-ask="${esc(d.lrNo)}" type="button">Delete</button>`:""}`}</div></div>`}).join("");
 }
 $("list").addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;const find=n=>all.find(d=>d.lrNo===n);
   if(b.dataset.open){if(dirty&&!confirmLeave())return;load(find(b.dataset.open));closeDrawer()}
   else if(b.dataset.dup){if(dirty&&!confirmLeave())return;newLR(find(b.dataset.dup));closeDrawer();toast("New LR started with the same parties and vehicle")}
+  else if(b.dataset.deliver){b.disabled=true;markDelivered(b.dataset.deliver,true,today())}
   else if(b.dataset.ask){confirmDel=b.dataset.ask;renderList()}
   else if(b.dataset.delno){confirmDel=null;renderList()}
   else if(b.dataset.delok){const n=b.dataset.delok;confirmDel=null;
