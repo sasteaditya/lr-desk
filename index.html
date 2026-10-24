@@ -409,20 +409,33 @@ function buildForm(){
   h+=`<datalist id="dlParty"></datalist><datalist id="dlVeh"></datalist><datalist id="dlPlace"></datalist>`;
   F.innerHTML=h;fillLists();
 }
+let sharedParties=[];
 function fillLists(){
+  // Shared Parties list from the Sheet comes first; LR history only fills gaps (newest LR wins)
   const parties=new Map(),veh=new Set(),places=new Set();
-  all.forEach(d=>{[["cnor"],["cnee"]].forEach(([p])=>{if(d[p+"Name"])parties.set(d[p+"Name"],{addr:d[p+"Addr"],gst:d[p+"Gst"],email:d[p+"Email"]})});
+  const key=n=>String(n||"").trim().toLowerCase();
+  const put=(name,addr,gst,email)=>{name=String(name||"").trim();if(!name)return;const k=key(name),cur=parties.get(k)||{name};
+    if(!cur.addr&&addr)cur.addr=addr;if(!cur.gst&&gst)cur.gst=gst;if(!cur.email&&email)cur.email=email;parties.set(k,cur)};
+  sharedParties.forEach(p=>put(p.name,p.addr,p.gst,p.email));
+  [...all].sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0)).forEach(d=>{
+    put(d.cnorName,d.cnorAddr,d.cnorGst,d.cnorEmail);put(d.cneeName,d.cneeAddr,d.cneeGst,d.cneeEmail);
+    if(d.billTo==="Other")put(d.billName,d.billAddr,d.billGst,d.billEmail);
     if(d.veh)veh.add(d.veh);if(d.lp)places.add(d.lp);if(d.dest)places.add(d.dest)});
   window._parties=parties;
+  const names=[...parties.values()].map(p=>p.name).sort((a,b)=>a.localeCompare(b));
   const opt=s=>[...s].map(v=>`<option value="${esc(v)}">`).join("");
-  if($("dlParty")){$("dlParty").innerHTML=opt(parties.keys());$("dlVeh").innerHTML=opt(veh);$("dlPlace").innerHTML=opt(places)}
+  if($("dlParty")){$("dlParty").innerHTML=opt(names);$("dlVeh").innerHTML=opt(veh);$("dlPlace").innerHTML=opt(places)}
+}
+function applyParty(pre,p){
+  // Picking a party replaces address, GSTIN and email with that party's saved details
+  [["Addr","addr"],["Gst","gst"],["Email","email"]].forEach(([f,k])=>{if(p[k]){cur[pre+f]=p[k];const el=$("i_"+pre+f);if(el)el.value=p[k]}});
 }
 function markDirty(){dirty=true;status();schedule();try{localStorage.setItem("lrDraft",JSON.stringify(cur))}catch(e){}}
 $("form").addEventListener("input",e=>{
   const t=e.target;
   if(t.dataset.k){let v=t.value;if(t.dataset.up){v=v.toUpperCase();if(t.value!==v){const p=t.selectionStart;t.value=v;try{t.setSelectionRange(p,p)}catch(_){}}}
     cur[t.dataset.k]=v;
-    if(t.dataset.party){const p=window._parties?.get(v);if(p){const pre=t.dataset.party;if(!cur[pre+"Addr"]){cur[pre+"Addr"]=p.addr||"";$("i_"+pre+"Addr").value=cur[pre+"Addr"]}if(!cur[pre+"Gst"]){cur[pre+"Gst"]=p.gst||"";$("i_"+pre+"Gst").value=cur[pre+"Gst"]}if(!cur[pre+"Email"]&&p.email){cur[pre+"Email"]=p.email;$("i_"+pre+"Email").value=p.email}}}
+    if(t.dataset.party){const p=window._parties?.get(String(v).trim().toLowerCase());if(p&&String(v).trim().length){applyParty(t.dataset.party,p);refreshStatusNote()}}
     if(/^(cnor|cnee)/.test(t.dataset.k)&&cur.billTo!=="Other")syncBill();if(t.dataset.k.endsWith("Email"))refreshStatusNote();
     markDirty();
   }
@@ -632,7 +645,7 @@ async function startSession(j){
   await refresh(true);
 }
 function signOut(msg){
-  token="";me=null;unlocked=false;SIGN="";all=[];listLoaded=false;
+  token="";me=null;unlocked=false;SIGN="";all=[];listLoaded=false;sharedParties=[];
   try{localStorage.removeItem("lrToken")}catch(e){}
   $("who").textContent="";renderList();status();schedule();
   $("sentTo").textContent="";$("codeIn").value="";
@@ -649,6 +662,7 @@ async function refresh(first){
     const j=await api("list");
     all=(j.lrs||[]).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     if(j.settings)settings=j.settings;
+    if(Array.isArray(j.parties))sharedParties=j.parties;
     listLoaded=true;
     fillLists();renderList();
     if(first&&!dirty&&all.length)load(all[0]);
