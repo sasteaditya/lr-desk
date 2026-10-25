@@ -58,7 +58,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .card h2 .hint{font-family:var(--body);text-transform:none;letter-spacing:0;color:var(--muted);font-weight:500;font-size:12px}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
-.f.w2{grid-column:span 2} .f.w4{grid-column:1/-1}
+.f.w2{grid-column:span 2} .f.w3{grid-column:span 3} .f.w4{grid-column:1/-1}
 .f label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.03em}
 .f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:var(--field);border-radius:7px;padding:7px 9px;min-width:0}
 .f textarea{resize:vertical;min-height:54px}
@@ -128,7 +128,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 @media (max-width:560px){
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .f.w2{grid-column:1/-1}
+  .f.w2,.f.w3{grid-column:1/-1}
   .conds{grid-template-columns:minmax(0,1fr)}
   .brand span{display:none}
 }
@@ -277,6 +277,9 @@ body[data-mode="plc"] .main,body[data-mode="plc"] .tabs{display:none!important}
 .modal-in .status{white-space:normal;line-height:1.45}
 .btn.danger-bg{background:var(--danger);border-color:var(--danger);color:#fff}
 .f input.ro{background:var(--chip);color:var(--muted);cursor:default}
+.em-sec{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px}
+#waSec{display:flex;flex-direction:column;gap:12px}
+.em-sec.wa{color:#128C4A;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .drops{display:flex;flex-direction:column;gap:10px}
 .drop{border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px;background:var(--field)}
 .drop-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;font-size:13px;color:var(--accent)}
@@ -398,7 +401,7 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
     </div>
     <div class="actions">
       <div class="grp"><button class="btn ghost" id="bNew" type="button">+ New LR</button><button class="btn ghost" id="bList" type="button">Saved LRs <span id="cnt"></span></button></div>
-      <div class="grp"><button class="btn" id="bSave" type="button">Save</button><button class="btn" id="bPrint" type="button">Print</button><button class="btn" id="bEmail" type="button">Email PDF</button><button class="btn primary" id="bPdf" type="button">Download PDF</button></div>
+      <div class="grp"><button class="btn" id="bSave" type="button">Save</button><button class="btn" id="bPrint" type="button">Print</button><button class="btn" id="bEmail" type="button">Send PDF</button><button class="btn primary" id="bPdf" type="button">Download PDF</button></div>
     </div>
   </div>
   <div class="tabs" role="tablist">
@@ -471,7 +474,7 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
     <div class="grid">
       <div class="f w2"><label for="p_cnorName">Name</label><input id="p_cnorName" list="dlParty"></div>
       <div class="f w2"><label for="p_lp">Loading point</label><input id="p_lp" list="dlPlace"></div>
-      <div class="f w2"><label for="p_cnorEmail">Email</label><input id="p_cnorEmail" type="email" multiple></div>
+      <div class="f"><label for="p_cnorEmail">Email</label><input id="p_cnorEmail" type="email" multiple></div><div class="f"><label for="p_cnorMob">WhatsApp Mobile</label><input id="p_cnorMob" type="tel"></div>
       <div class="f"><label for="p_cnorGst">GSTIN</label><input id="p_cnorGst"></div>
       <div class="f"><label for="p_cnorAddr">Address</label><input id="p_cnorAddr"></div>
     </div>
@@ -480,7 +483,7 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
     <button type="button" class="btn ghost" id="bAddDrop">+ Add another consignee</button>
     <div class="pl-sec">Billed To</div>
     <div class="seg" id="plBillTo" role="group" aria-label="Billed To" data-v="Consignee"><button type="button" data-v="Consignor" aria-pressed="false">Consignor</button><button type="button" data-v="Consignee" aria-pressed="true">Consignee</button><button type="button" data-v="Other" aria-pressed="false">Other</button></div>
-    <div class="grid" id="plOther" hidden><div class="f w2"><label for="p_billName">Billed party name</label><input id="p_billName" list="dlParty"></div><div class="f w2"><label for="p_billEmail">Billed party email</label><input id="p_billEmail" type="email" multiple></div></div>
+    <div class="grid" id="plOther" hidden><div class="f w2"><label for="p_billName">Billed party name</label><input id="p_billName" list="dlParty"></div><div class="f"><label for="p_billEmail">Billed party email</label><input id="p_billEmail" type="email" multiple></div><div class="f"><label for="p_billMob">WhatsApp Mobile</label><input id="p_billMob" type="tel"></div></div>
     <div class="f"><label for="p_remarks">Remarks (internal)</label><input id="p_remarks"></div>
     <div class="status" id="plMailNote"></div>
     <div class="status dirty" id="plErr" role="status"></div>
@@ -551,14 +554,23 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
 </div>
 <div class="modal" id="emailBox" hidden>
   <div class="modal-in" role="dialog" aria-labelledby="emTitle">
-    <h3 id="emTitle">Email this LR as PDF</h3>
+    <h3 id="emTitle">Send this LR as PDF</h3>
+    <div class="em-sec">Email</div>
     <label class="chk"><input type="checkbox" id="emCnor"><span><b>Consignor</b><br><small id="emCnorLbl"></small></span></label>
     <label class="chk"><input type="checkbox" id="emCnee"><span><b>Consignee</b><br><small id="emCneeLbl"></small></span></label>
     <label class="chk" id="emCcRow"><input type="checkbox" id="emCc"><span><b>Copy to us</b><br><small id="emCcLbl"></small></span></label>
-    <div class="f"><label for="emExtra">Also send to (optional, separate with commas)</label><input id="emExtra" type="email" multiple placeholder="accounts@client.com"></div>
+    <div class="f"><label for="emExtra">Also email (optional, separate with commas)</label><input id="emExtra" type="email" multiple placeholder="accounts@client.com"></div>
+    <div id="waSec" hidden>
+      <div class="em-sec wa">WhatsApp</div>
+      <label class="chk"><input type="checkbox" id="waCnor"><span><b>Consignor</b><br><small id="waCnorLbl"></small></span></label>
+      <label class="chk"><input type="checkbox" id="waCnee"><span><b>Consignee</b><br><small id="waCneeLbl"></small></span></label>
+      <label class="chk"><input type="checkbox" id="waDrv"><span><b>Driver</b><br><small id="waDrvLbl"></small></span></label>
+      <div class="f"><label for="waExtra">Also WhatsApp (optional, mobile numbers separated with commas)</label><input id="waExtra" type="tel" placeholder="98220 12345"></div>
+    </div>
+    <div class="status" id="waSetupNote" hidden>WhatsApp is switched on in Settings but not connected yet, so only email is available.</div>
     <div class="status" id="emLast"></div>
     <div class="status" id="emNote" role="status"></div>
-    <div class="modal-btns"><button class="btn ghost" id="emCancel" type="button">Cancel</button><button class="btn primary" id="emSend" type="button">Send email</button></div>
+    <div class="modal-btns"><button class="btn ghost" id="emCancel" type="button">Cancel</button><button class="btn primary" id="emSend" type="button">Send</button></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -584,8 +596,8 @@ const SECTIONS=[
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
    {k:"lp",l:"Loading Point",w:2,list:"dlPlace"},{k:"dest",l:"Destination",w:2,list:"dlPlace"}]},
- {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"},{k:"cnorEmail",l:"Email (gets the PDF copy, use commas for more than one)",w:4,type:"email",multi:1}]},
- {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"},{k:"cneeEmail",l:"Email (gets the PDF copy, use commas for more than one)",w:4,type:"email",multi:1}]},
+ {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"},{k:"cnorEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cnorMob",l:"WhatsApp Mobile",type:"tel"}]},
+ {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"},{k:"cneeEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cneeMob",l:"WhatsApp Mobile",type:"tel"}]},
  {t:"Billed To",billed:1},
  {t:"Invoice & Order",f:[{k:"inv",l:"GST Inv. No."},{k:"invDate",l:"Inv. Date",type:"date"},{k:"invVal",l:"Inv. Value (Rs.)",mode:"decimal"},{k:"inco",l:"Incoterms"},
    {k:"po",l:"P.O. No."},{k:"poDate",l:"P.O. Date",type:"date"},{k:"ewb",l:"E-Way Bill No."},{k:"ewbValid",l:"E-Way Valid Upto",type:"date"},
@@ -600,9 +612,9 @@ const SECTIONS=[
 let cur=blankLR(), dirty=false, all=[], settings={prefix:"ALF",start:1};
 
 function bill(L){
-  if(L.billTo==="Consignor")return{name:L.cnorName,addr:L.cnorAddr,gst:L.cnorGst,email:L.cnorEmail};
-  if(L.billTo==="Consignee")return{name:L.cneeName,addr:L.cneeAddr,gst:L.cneeGst,email:L.cneeEmail};
-  return{name:L.billName,addr:L.billAddr,gst:L.billGst,email:L.billEmail};
+  if(L.billTo==="Consignor")return{name:L.cnorName,addr:L.cnorAddr,gst:L.cnorGst,email:L.cnorEmail,mob:L.cnorMob};
+  if(L.billTo==="Consignee")return{name:L.cneeName,addr:L.cneeAddr,gst:L.cneeGst,email:L.cneeEmail,mob:L.cneeMob};
+  return{name:L.billName,addr:L.billAddr,gst:L.billGst,email:L.billEmail,mob:L.billMob};
 }
 function totals(L){let g=0,n=0,r=0;(L.items||[]).forEach(i=>{g+=num(i.gross)||0;n+=num(i.net)||0;r+=num(i.rgross)||0});return{g,n,r}}
 let listLoaded=false;
@@ -620,7 +632,7 @@ function nextNo(){
 
 /* ---------- Form ---------- */
 function fieldHTML(x){
-  const v=esc(cur[x.k]),id="i_"+x.k,cls="f"+(x.w===2?" w2":x.w===4?" w4":"");
+  const v=esc(cur[x.k]),id="i_"+x.k,cls="f"+(x.w===2?" w2":x.w===3?" w3":x.w===4?" w4":"");
   let input;
   if(x.type==="select")input=`<select id="${id}" data-k="${x.k}">${x.opts.map(o=>`<option${o===cur[x.k]?" selected":""}>${o}</option>`).join("")}</select>`;
   else if(x.type==="area")input=`<textarea id="${id}" data-k="${x.k}" rows="2">${v}</textarea>`;
@@ -640,7 +652,8 @@ function buildForm(){
         <div class="f w2"><label for="i_billName">Party Name</label><input id="i_billName" data-k="billName" value="${esc(b.name)}"${auto?" disabled":""}></div>
         <div class="f w2"><label for="i_billGst">GSTIN</label><input id="i_billGst" data-k="billGst" data-up="1" value="${esc(b.gst)}"${auto?" disabled":""}></div>
         <div class="f w4"><label for="i_billAddr">Address</label><textarea id="i_billAddr" data-k="billAddr" rows="2"${auto?" disabled":""}>${esc(b.addr)}</textarea></div>
-        <div class="f w4"><label for="i_billEmail">Email (gets the "delivered" email)</label><input id="i_billEmail" data-k="billEmail" type="email" multiple value="${esc(b.email)}"${auto?" disabled":""}></div>
+        <div class="f w3"><label for="i_billEmail">Email (gets the "delivered" email)</label><input id="i_billEmail" data-k="billEmail" type="email" multiple value="${esc(b.email)}"${auto?" disabled":""}></div>
+        <div class="f"><label for="i_billMob">WhatsApp Mobile</label><input id="i_billMob" data-k="billMob" type="tel" value="${esc(b.mob)}"${auto?" disabled":""}></div>
         ${fieldHTML({k:"billState",l:"State / Code"})}${fieldHTML({k:"billContact",l:"Contact",type:"tel"})}${fieldHTML({k:"billPan",l:"Party PAN",up:1,w:2})}
       </div>`;
     }
@@ -665,12 +678,12 @@ function fillLists(){
   // Shared Parties list from the Sheet comes first; LR history only fills gaps (newest LR wins)
   const parties=new Map(),veh=new Set(),places=new Set();
   const key=n=>String(n||"").trim().toLowerCase();
-  const put=(name,addr,gst,email)=>{name=String(name||"").trim();if(!name)return;const k=key(name),cur=parties.get(k)||{name};
-    if(!cur.addr&&addr)cur.addr=addr;if(!cur.gst&&gst)cur.gst=gst;if(!cur.email&&email)cur.email=email;parties.set(k,cur)};
-  sharedParties.forEach(p=>put(p.name,p.addr,p.gst,p.email));
+  const put=(name,addr,gst,email,mob)=>{name=String(name||"").trim();if(!name)return;const k=key(name),cur=parties.get(k)||{name};
+    if(!cur.addr&&addr)cur.addr=addr;if(!cur.gst&&gst)cur.gst=gst;if(!cur.email&&email)cur.email=email;if(!cur.mob&&mob)cur.mob=mob;parties.set(k,cur)};
+  sharedParties.forEach(p=>put(p.name,p.addr,p.gst,p.email,p.mob));
   [...all].sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0)).forEach(d=>{
-    put(d.cnorName,d.cnorAddr,d.cnorGst,d.cnorEmail);put(d.cneeName,d.cneeAddr,d.cneeGst,d.cneeEmail);
-    if(d.billTo==="Other")put(d.billName,d.billAddr,d.billGst,d.billEmail);
+    put(d.cnorName,d.cnorAddr,d.cnorGst,d.cnorEmail,d.cnorMob);put(d.cneeName,d.cneeAddr,d.cneeGst,d.cneeEmail,d.cneeMob);
+    if(d.billTo==="Other")put(d.billName,d.billAddr,d.billGst,d.billEmail,d.billMob);
     if(d.veh)veh.add(d.veh);if(d.lp)places.add(d.lp);if(d.dest)places.add(d.dest)});
   window._parties=parties;
   const names=[...parties.values()].map(p=>p.name).sort((a,b)=>a.localeCompare(b));
@@ -679,7 +692,7 @@ function fillLists(){
 }
 function applyParty(pre,p){
   // Picking a party replaces address, GSTIN and email with that party's saved details
-  [["Addr","addr"],["Gst","gst"],["Email","email"]].forEach(([f,k])=>{if(p[k]){cur[pre+f]=p[k];const el=$("i_"+pre+f);if(el)el.value=p[k]}});
+  [["Addr","addr"],["Gst","gst"],["Email","email"],["Mob","mob"]].forEach(([f,k])=>{if(p[k]){cur[pre+f]=p[k];const el=$("i_"+pre+f);if(el)el.value=p[k]}});
 }
 function markDirty(){dirty=true;status();schedule();try{localStorage.setItem("lrDraft",JSON.stringify(cur))}catch(e){}}
 $("form").addEventListener("input",e=>{
@@ -693,10 +706,10 @@ $("form").addEventListener("input",e=>{
   if(t.dataset.item!==undefined){cur.items[+t.dataset.item][t.dataset.ik]=t.value;const T=totals(cur);$("tg").textContent=T.g.toFixed(3);$("tn").textContent=T.n.toFixed(3);$("tr").textContent=T.r.toFixed(3);markDirty()}
 });
 $("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;markDirty()}});
-function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||""}
+function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||"";$("i_billMob").value=b.mob||""}
 $("form").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
-  if(b.dataset.bill){const was=cur.billTo;if(b.dataset.bill==="Other"&&was!=="Other"){const x=bill(cur);cur.billName=x.name;cur.billAddr=x.addr;cur.billGst=x.gst;cur.billEmail=x.email}cur.billTo=b.dataset.bill;rebuild();markDirty()}
+  if(b.dataset.bill){const was=cur.billTo;if(b.dataset.bill==="Other"&&was!=="Other"){const x=bill(cur);cur.billName=x.name;cur.billAddr=x.addr;cur.billGst=x.gst;cur.billEmail=x.email;cur.billMob=x.mob}cur.billTo=b.dataset.bill;rebuild();markDirty()}
   else if(b.id==="bDeliver"){markDelivered(cur.lrNo,true,$("i_delDate").value)}
   else if(b.id==="bUndeliver"){markDelivered(cur.lrNo,false)}
   else if(b.id==="bAddItem"){if(cur.items.length<60){cur.items.push(blankItem());rebuild();markDirty();$(`it_${cur.items.length-1}_desc`)?.focus()}}
@@ -980,6 +993,8 @@ async function pdf(){
 
 /* ---------- Email PDF ---------- */
 const splitEmails=s=>String(s||"").split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+const splitMobs=s=>String(s||"").split(/[,;\/]+/).map(x=>x.trim()).filter(x=>{const d=x.replace(/\D/g,"");return d.length>=10&&d.length<=14});
+const waDigits=x=>{let d=String(x||"").replace(/\D/g,"");if(d.length===11&&d[0]==="0")d=d.slice(1);if(d.length===10)d="91"+d;return d};
 const okEmail=x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x);
 function recipients(){
   const out=[];
@@ -988,6 +1003,15 @@ function recipients(){
   out.push(...splitEmails($("emExtra").value));
   return [...new Set(out)];
 }
+function waRecipients(){
+  const out=[];
+  if($("waCnor").checked)out.push(...splitMobs(cur.cnorMob));
+  if($("waCnee").checked)out.push(...splitMobs(cur.cneeMob));
+  if($("waDrv").checked)out.push(...splitMobs(cur.driverMob));
+  out.push(...splitMobs($("waExtra").value));
+  return [...new Set(out.map(waDigits))];
+}
+function setWaChk(id,v,on){const m=splitMobs(v);$(id+"Lbl").textContent=m.length?m.join(", "):"No mobile entered";$(id).checked=on&&m.length>0;$(id).disabled=!m.length}
 function openEmail(){
   if(!unlocked){showLock("Sign in to email LRs.");return}
   const ce=splitEmails(cur.cnorEmail),ne=splitEmails(cur.cneeEmail);
@@ -997,36 +1021,43 @@ function openEmail(){
   $("emCnee").checked=ne.length>0;$("emCnee").disabled=!ne.length;
   $("emCcRow").hidden=!settings.cc;$("emCcLbl").textContent=settings.cc||"";$("emCc").checked=!!settings.cc;
   $("emExtra").value="";$("emNote").textContent="";$("emNote").className="status";
-  const last=(cur.emailLog||[]).slice(-1)[0];
-  $("emLast").textContent=last?`Last emailed ${last.at} to ${last.to}`:"";
+  $("waSec").hidden=!settings.wa;$("waSetupNote").hidden=!settings.waSetup;
+  setWaChk("waCnor",cur.cnorMob,true);setWaChk("waCnee",cur.cneeMob,true);setWaChk("waDrv",cur.driverMob,!!settings.waDriver);$("waExtra").value="";
+  const last=(cur.emailLog||[]).slice(-1)[0],lw=(cur.waLog||[]).slice(-1)[0];
+  $("emLast").textContent=[last?`Last emailed ${last.at} to ${last.to}`:"",lw?`Last WhatsApp ${lw.at} to ${lw.to}`:""].filter(Boolean).join(". ");
   $("emailBox").hidden=false;
 }
-async function sendEmail(list,cc,auto){
-  if(!list.length&&!cc)throw new Error("Add at least one email address.");
+async function sendEmail(list,cc,auto,wa){
+  wa=wa||[];
+  if(!list.length&&!cc&&!wa.length)throw new Error("Choose at least one email address or WhatsApp number.");
   const bad=list.filter(x=>!okEmail(x));if(bad.length)throw new Error("Check this email: "+bad[0]);
   const doc=await makePdf(2);
   const b64=doc.output("datauristring").split(",")[1];
-  const j=await api("emailLR",{lrNo:cur.lrNo,to:list,cc:cc?settings.cc:"",pdf:b64,auto:!!auto},90000);
-  if(j.lr){cur.emailLog=j.lr.emailLog;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].emailLog=j.lr.emailLog}
+  const j=await api("emailLR",{lrNo:cur.lrNo,to:list,cc:cc?settings.cc:"",pdf:b64,auto:!!auto,wa},120000);
+  if(j.lr){cur.emailLog=j.lr.emailLog;cur.waLog=j.lr.waLog;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0){all[i].emailLog=j.lr.emailLog;all[i].waLog=j.lr.waLog}}
   return j;
 }
 $("bEmail").onclick=async()=>{if(!(await ensureSaved()))return;openEmail()};
 $("emCancel").onclick=()=>{$("emailBox").hidden=true};
 $("emailBox").addEventListener("click",e=>{if(e.target===$("emailBox"))$("emailBox").hidden=true});
 $("emSend").onclick=async()=>{
-  const list=recipients(),cc=$("emCc").checked&&!!settings.cc;
+  const list=recipients(),wa=settings.wa?waRecipients():[],cc=$("emCc").checked&&!!settings.cc&&(list.length>0||!wa.length);
   const n=$("emNote");$("emSend").disabled=true;n.className="status";n.textContent="Preparing PDF and sending…";
-  try{const j=await sendEmail(list,cc,false);$("emailBox").hidden=true;toast(`${cur.lrNo} emailed to ${j.sentTo}`)}
+  try{const j=await sendEmail(list,cc,false,wa);$("emailBox").hidden=true;toast(sentMsg(j))}
   catch(e){n.className="status dirty";n.textContent=e.message}
   finally{$("emSend").disabled=false}
 };
+function sentMsg(j){
+  return `${cur.lrNo}: `+[j.sentTo?`emailed to ${j.sentTo}`:"",j.waSent?`WhatsApp sent to ${j.waSent}`:"",j.waFailed?`WhatsApp failed for ${j.waFailed}`:""].filter(Boolean).join(". ");
+}
 async function autoEmail(){
-  if(!settings.autoEmail)return;
-  const list=[...new Set([...splitEmails(cur.cnorEmail),...splitEmails(cur.cneeEmail)])].filter(okEmail);
-  if(!list.length){toast(`${cur.lrNo} saved. No party email, so it was not emailed.`);return}
-  toast(`Emailing ${cur.lrNo} to ${list.length} ${list.length>1?"people":"person"}…`);
-  try{const j=await sendEmail(list,!!settings.cc,true);toast(`${cur.lrNo} saved and emailed to ${j.sentTo}`)}
-  catch(e){if(e.code!=="auth")toast(`Saved, but email failed: ${e.message} Use Email PDF to retry.`)}
+  const list=settings.autoEmail?[...new Set([...splitEmails(cur.cnorEmail),...splitEmails(cur.cneeEmail)])].filter(okEmail):[];
+  const wa=settings.wa&&settings.waLr?[...new Set([...splitMobs(cur.cnorMob),...splitMobs(cur.cneeMob),...(settings.waDriver?splitMobs(cur.driverMob):[])].map(waDigits))]:[];
+  if(!settings.autoEmail&&!wa.length)return;
+  if(!list.length&&!wa.length){toast(`${cur.lrNo} saved. No party email or mobile, so it was not sent.`);return}
+  toast(`Sending ${cur.lrNo}…`);
+  try{const j=await sendEmail(list,!!settings.cc&&list.length>0,true,wa);toast(`Saved. `+sentMsg(j))}
+  catch(e){if(e.code!=="auth")toast(`Saved, but sending failed: ${e.message} Use Send PDF to retry.`)}
 }
 function load(L){cur=JSON.parse(JSON.stringify(L));if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};dirty=false;buildForm();schedule();status();window.scrollTo(0,0)}
 function newLR(from){
@@ -1064,7 +1095,7 @@ async function markDelivered(lrNo,on,date){
     const i=all.findIndex(d=>d.lrNo===lrNo);if(i>=0)all[i]=j.lr;
     if(cur.lrNo===lrNo){["delivered","deliveredOn","deliveredBy","deliveryEmailedAt","deliveryEmailedTo"].forEach(k=>cur[k]=j.lr[k]);renderStatus()}
     renderList();
-    toast(on?(j.emailedTo?`${lrNo} marked delivered. Email sent to ${j.emailedTo}`:`${lrNo} marked delivered${j.emailNote?". "+j.emailNote:""}`):`${lrNo} is back to In Transit`);
+    toast(on?(j.emailedTo?`${lrNo} marked delivered. Email sent to ${j.emailedTo}`:`${lrNo} marked delivered${j.emailNote?". "+j.emailNote:""}`)+(on&&j.waNote?". "+j.waNote:""):`${lrNo} is back to In Transit`);
   }catch(e){if(e.code!=="auth")toast(e.message);if(btn)btn.disabled=false}
 }
 
@@ -1383,7 +1414,7 @@ $("reqs").addEventListener("click",async e=>{
 });
 /* ===================== Vehicle placements ===================== */
 let placements=[],plcFilter="open",plcEdit=null;
-const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","cnorName","cnorAddr","cnorGst","cnorEmail","lp","billName","billEmail","remarks"];
+const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","cnorName","cnorAddr","cnorGst","cnorEmail","cnorMob","lp","billName","billEmail","billMob","remarks"];
 function plcDrops(p){return p.consignees&&p.consignees.length?p.consignees:(p.cneeName||p.dest?[{name:p.cneeName,addr:p.cneeAddr,gst:p.cneeGst,email:p.cneeEmail,dest:p.dest,lrNo:p.lrNo||""}]:[])}
 function plcStatusChip(p){const d=plcDrops(p),n=d.filter(x=>x.lrNo).length;
   return p.status==="Cancelled"?`<span class="chip draft sm">Cancelled</span>`:p.status==="LR Issued"?`<span class="chip done sm">LR Issued</span>`:p.status==="Partly Issued"?`<span class="chip req sm">LR ${n} of ${d.length} issued</span>`:`<span class="chip transit sm">Vehicle Placed</span>`}
@@ -1415,18 +1446,20 @@ function setPlcBill(v){$("plBillTo").dataset.v=v;document.querySelectorAll("#plB
 $("plBillTo").addEventListener("click",e=>{const b=e.target.closest("button[data-v]");if(b)setPlcBill(b.dataset.v)});
 function dropHTML(i,c){c=c||{};return `<div class="drop" data-i="${i}"><div class="drop-h"><span>Consignee ${i+1}</span>${i?`<button type="button" class="btn ghost sm danger" data-rmdrop="${i}">Remove</button>`:""}</div>
   <div class="grid"><div class="f w2"><label>Name</label><input data-dk="name" list="dlParty" value="${esc(c.name)}"></div><div class="f w2"><label>Destination</label><input data-dk="dest" list="dlPlace" value="${esc(c.dest)}"></div>
-  <div class="f w2"><label>Email</label><input data-dk="email" type="email" multiple value="${esc(c.email)}"></div><div class="f"><label>GSTIN</label><input data-dk="gst" value="${esc(c.gst)}"></div><div class="f"><label>Address</label><input data-dk="addr" value="${esc(c.addr)}"></div></div></div>`}
+  <div class="f"><label>Email</label><input data-dk="email" type="email" multiple value="${esc(c.email)}"></div><div class="f"><label>WhatsApp Mobile</label><input data-dk="mob" type="tel" value="${esc(c.mob)}"></div><div class="f"><label>GSTIN</label><input data-dk="gst" value="${esc(c.gst)}"></div><div class="f"><label>Address</label><input data-dk="addr" value="${esc(c.addr)}"></div></div></div>`}
 function readDrops(){return [...document.querySelectorAll("#plDrops .drop")].map(d=>{const o={};d.querySelectorAll("[data-dk]").forEach(x=>o[x.dataset.dk]=x.value.trim());return o})}
 function renderDrops(list){if(!list.length)list=[{}];$("plDrops").innerHTML=list.map((c,i)=>dropHTML(i,c)).join("");$("bAddDrop").disabled=list.length>=8}
 $("bAddDrop").onclick=()=>{const l=readDrops();l.push({});renderDrops(l);const last=document.querySelector("#plDrops .drop:last-child [data-dk=name]");if(last)last.focus();plcNote()};
 $("plDrops").addEventListener("click",e=>{const b=e.target.closest("[data-rmdrop]");if(!b)return;const l=readDrops();l.splice(+b.dataset.rmdrop,1);renderDrops(l);plcNote()});
 $("plDrops").addEventListener("input",e=>{const t=e.target;if(t.dataset.dk==="gst"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
-  if(t.dataset.dk==="name"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){const box=t.closest(".drop");[["addr","addr"],["gst","gst"],["email","email"]].forEach(([f,k])=>{if(party[k])box.querySelector(`[data-dk=${f}]`).value=party[k]})}}
+  if(t.dataset.dk==="name"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){const box=t.closest(".drop");[["addr","addr"],["gst","gst"],["email","email"],["mob","mob"]].forEach(([f,k])=>{if(party[k])box.querySelector(`[data-dk=${f}]`).value=party[k]})}}
   plcNote()});
 function plcNote(){
   const v=$("plBillTo").dataset.v,bill=v==="Consignor"?$("p_cnorEmail").value:v==="Consignee"?readDrops().map(d=>d.email).join(","):$("p_billEmail").value;
   const em=[...new Set([...splitEmails(bill),...splitEmails($("p_cnorEmail").value)])].filter(okEmail);
-  $("plMailNote").textContent=!settings.plcEmail?"Vehicle Placed emails are switched off in Settings.":em.length?`On save, a "Vehicle Placed" email goes to: ${em.join(", ")}`:"Add the Billed To party's or consignor's email to notify them.";
+  const mb=v==="Consignor"?$("p_cnorMob").value:v==="Consignee"?readDrops().map(d=>d.mob).join(","):$("p_billMob").value;
+  const wa=[...new Set([...splitMobs(mb),...splitMobs($("p_cnorMob").value)])];
+  $("plMailNote").textContent=(!settings.plcEmail?"Vehicle Placed emails are switched off in Settings.":em.length?`On save, a "Vehicle Placed" email goes to: ${em.join(", ")}.`:"Add the Billed To party's or consignor's email to notify them.")+(settings.wa?(wa.length?` WhatsApp goes to: ${wa.join(", ")}.`:" Add a WhatsApp mobile to also notify them on WhatsApp."):"");
 }
 let plcReplaceOf=null;
 function openPlc(no){
@@ -1444,7 +1477,8 @@ $("plcBox").addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="p_veh"||t.id==="p_cnorGst"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
   if(t.id==="p_cnorName"){const pre="cnor",party=window._parties?.get(t.value.trim().toLowerCase());
-    if(party&&t.value.trim())[["Addr","addr"],["Gst","gst"],["Email","email"]].forEach(([f,k])=>{if(party[k])$("p_"+pre+f).value=party[k]})}
+    if(party&&t.value.trim())[["Addr","addr"],["Gst","gst"],["Email","email"],["Mob","mob"]].forEach(([f,k])=>{if(party[k])$("p_"+pre+f).value=party[k]})}
+  if(t.id==="p_billName"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){if(party.email)$("p_billEmail").value=party.email;if(party.mob)$("p_billMob").value=party.mob}}
   plcNote();
 });
 $("plCancel").onclick=()=>{$("plcBox").hidden=true};
@@ -1460,7 +1494,7 @@ $("plSave").onclick=async()=>{
     const j=await api("savePlacement",{p},60000);
     const i=placements.findIndex(x=>x.no===j.p.no);if(i>=0)placements[i]=j.p;else placements.unshift(j.p);
     $("plcBox").hidden=true;plcFilter="open";renderPlc();
-    toast(`${j.p.no} saved${j.emailedTo?". Email sent to "+j.emailedTo:j.emailNote?". "+j.emailNote:""}`);
+    toast(`${j.p.no} saved${j.emailedTo?". Email sent to "+j.emailedTo:j.emailNote?". "+j.emailNote:""}${j.waNote?". "+j.waNote:""}`);
   }catch(e){$("plErr").textContent=e.message}
   finally{b.disabled=false;b.textContent=plcEdit?"Save changes":"Place vehicle"}
 };
@@ -1470,8 +1504,8 @@ function issueLR(no,idx){
   const d=plcDrops(p)[idx||0]||{};
   const L=blankLR();
   Object.assign(L,{veh:p.veh,driver:p.driver,driverMob:p.driverMob,lp:p.lp,dest:d.dest||"",
-    cnorName:p.cnorName,cnorAddr:p.cnorAddr,cnorGst:p.cnorGst,cnorEmail:p.cnorEmail,cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",
-    billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,placementNo:p.no,placementDrop:idx||0});
+    cnorName:p.cnorName,cnorAddr:p.cnorAddr,cnorGst:p.cnorGst,cnorEmail:p.cnorEmail,cnorMob:p.cnorMob||"",cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",cneeMob:d.mob||"",
+    billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0});
   if(p.material)L.items=[Object.assign(blankItem(),{desc:p.material})];
   load(L);dirty=true;status();setMode("form");
   toast(`LR form filled from ${p.no}. Add the invoice and material details, then Save.`);
@@ -1490,7 +1524,7 @@ $("plcs").addEventListener("click",async e=>{
   else if(b.dataset.pedit)openPlc(b.dataset.pedit);
   else if(b.dataset.open)openLR(b.dataset.open);
   else if(b.dataset.share)plcShare(b.dataset.share);
-  else if(b.dataset.resend){b.disabled=true;try{const j=await api("resendPlacement",{no:b.dataset.resend});const i=placements.findIndex(x=>x.no===j.p.no);if(i>=0)placements[i]=j.p;renderPlc();toast(j.emailedTo?"Email sent to "+j.emailedTo:j.emailNote||"Not sent")}catch(err){toast(err.message)}b.disabled=false}
+  else if(b.dataset.resend){b.disabled=true;try{const j=await api("resendPlacement",{no:b.dataset.resend});const i=placements.findIndex(x=>x.no===j.p.no);if(i>=0)placements[i]=j.p;renderPlc();toast((j.emailedTo?"Email sent to "+j.emailedTo:j.emailNote||"Email not sent")+(j.waNote?". "+j.waNote:""))}catch(err){toast(err.message)}b.disabled=false}
   else if(b.dataset.pcancel)openCancel(b.dataset.pcancel);
 });
 
@@ -1513,7 +1547,7 @@ $("pcGo").onclick=async()=>{
   try{
     const j=await api("cancelPlacement",{no:pcNo,reason,notify:$("pcNotify").checked},60000);
     const i=placements.findIndex(x=>x.no===j.p.no);if(i>=0)placements[i]=j.p;$("pcBox").hidden=true;renderPlc();
-    toast(`${j.p.no} cancelled${j.emailedTo?". Email sent to "+j.emailedTo:""}`);
+    toast(`${j.p.no} cancelled${j.emailedTo?". Email sent to "+j.emailedTo:""}${j.waNote?". "+j.waNote:""}`);
   }catch(e){$("pcErr").textContent=e.message}
   finally{b.disabled=false;b.textContent="Cancel placement"}
 };
