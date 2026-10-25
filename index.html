@@ -362,7 +362,7 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
     <div class="f"><label for="fBy">Created by</label><select id="fBy"></select></div>
     <div class="f f-btn"><button type="button" class="btn ghost" id="fReset">Clear filters</button></div>
   </div>
-  <div class="reports admin-only">
+  <div class="reports">
     <div class="kpis" id="dKpis"></div>
     <div class="charts"><div class="card"><h2>LRs by month</h2><div id="cMonth"></div></div><div class="card"><h2>Top billed parties</h2><div id="cParty"></div></div></div>
   </div>
@@ -1106,7 +1106,7 @@ function renderResults(){
   [...dSel].forEach(n=>{if(!list.find(d=>d.lrNo===n))dSel.delete(n)});
   const [f,t]=rangeOf(DF.preset);
   $("dRange").textContent=`${list.length} LR${list.length===1?"":"s"}${f||t?` · ${f?fd(f):"start"} to ${t?fd(t):"today"}`:" · all dates"}`;
-  if(isAdmin())renderReports(list);
+  renderReports(list);
   const pages=Math.max(1,Math.ceil(list.length/dPer));if(dPage>pages)dPage=pages;
   const rows=list.slice((dPage-1)*dPer,dPage*dPer);
   const th=(k,l,cls)=>`<th class="${cls||""}${k?" sortable":""}"${k?` data-sort="${k}" aria-sort="${dSort.k===k?(dSort.dir>0?"ascending":"descending"):"none"}"`:""}>${l}${k&&dSort.k===k?(dSort.dir>0?" ▲":" ▼"):""}</th>`;
