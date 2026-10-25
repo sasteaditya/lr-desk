@@ -1197,7 +1197,7 @@ function renderReports(list){
   const T=list.reduce((a,d)=>{a.n++;if(d.delivered)a.del++;a.net+=netOf(d);a.val+=num(d.invVal)||0;if((d.emailLog||[]).length)a.em++;return a},{n:0,del:0,net:0,val:0,em:0});
   const kpi=(l,v,s)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${s?`<small>${s}</small>`:""}</div>`;
   $("dKpis").innerHTML=kpi("LRs",T.n,"")+kpi("In Transit",T.n-T.del,T.n?Math.round((T.n-T.del)/T.n*100)+"%":"")+kpi("Delivered",T.del,T.n?Math.round(T.del/T.n*100)+"%":"")
-    +kpi("Net weight",T.net.toLocaleString("en-IN",{maximumFractionDigits:1})+" MT","")+kpi("Invoice value","₹"+T.val.toLocaleString("en-IN",{maximumFractionDigits:0}),"")+kpi("Emailed",T.em,T.n?Math.round(T.em/T.n*100)+"% of LRs":"");
+    +kpi("Net weight",T.net.toLocaleString("en-IN",{maximumFractionDigits:1})+" MT","")+kpi("Emailed",T.em,T.n?Math.round(T.em/T.n*100)+"% of LRs":"");
   // LRs by month (last 12 months present in the list)
   const byM={};list.forEach(d=>{const m=(d.date||"").slice(0,7);if(m)byM[m]=(byM[m]||0)+1});
   const months=Object.keys(byM).sort().slice(-12),mx=Math.max(1,...months.map(m=>byM[m]));
