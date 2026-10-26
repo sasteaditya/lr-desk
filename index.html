@@ -279,6 +279,16 @@ body[data-mode="plc"] .main,body[data-mode="plc"] .tabs{display:none!important}
 .f input.ro{background:var(--chip);color:var(--muted);cursor:default}
 .theme-btn{display:inline-flex;align-items:center;gap:5px}.theme-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 @media (max-width:560px){.theme-btn span{display:none}}
+.kind-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px}
+.kind-lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.kind-note{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
+.trip-card{background:#fff;color:#14213d;padding:40px 44px;min-height:500px;font-family:var(--body,system-ui)}
+.trip-card h3{margin:0 0 18px;font-size:22px;color:#12357a}
+.trip-card dl{display:grid;grid-template-columns:180px 1fr;gap:10px 16px;margin:0 0 20px;font-size:16px}
+.trip-card dt{color:#5a6b85}.trip-card dd{margin:0;font-weight:600}
+.trip-card p{color:#5a6b85;font-size:14px}
+.dt .sub{font-size:11.5px;color:var(--muted);font-family:var(--body,system-ui)}
 .em-sec{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px}
 #waSec{display:flex;flex-direction:column;gap:12px}
 .em-sec.wa{color:#128C4A;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
@@ -595,7 +605,7 @@ const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",r
 const blankLR=()=>({lrNo:"",date:today(),freight:"Pre-Paid",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
 const SECTIONS=[
- {t:"LR details",f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["Pre-Paid","To Pay","To Be Billed"]},{k:"placementNo",l:"Placement No. (from Placements)",ro:1,w:2}]},
+ {t:"LR details",kind:1,f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["Pre-Paid","To Pay","To Be Billed"]},{k:"placementNo",l:"Placement No. (from Placements)",ro:1,w:2}]},
  {t:"Delivery status",status:1},
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
@@ -624,12 +634,13 @@ function totals(L){let g=0,n=0,r=0;(L.items||[]).forEach(i=>{g+=num(i.gross)||0;
 let listLoaded=false;
 function shownNext(){
   // Until the Sheet has answered, show the last number seen on this device instead of a guess
-  if(listLoaded){const n=nextNo();try{localStorage.setItem("lrNextSeen",n)}catch(e){}return n}
+  if(listLoaded){const n=nextNo();if(!isClient(cur))try{localStorage.setItem("lrNextSeen",n)}catch(e){}return n}
   let c="";try{c=localStorage.getItem("lrNextSeen")||""}catch(e){}
   return c||"Loading…";
 }
+const isClient=L=>L&&L.kind==="client";
 function nextNo(){
-  const p=settings.prefix||"ALF";let max=(parseInt(settings.start)||1)-1;
+  const cl=isClient(cur),p=cl?(settings.tripPrefix||"ATT"):(settings.prefix||"ALF");let max=cl?0:(parseInt(settings.start)||1)-1;
   all.forEach(d=>{if(d.lrNo&&d.lrNo.startsWith(p)){const k=parseInt(d.lrNo.slice(p.length));if(!isNaN(k)&&k>max)max=k}});
   return p+String(max+1).padStart(5,"0");
 }
@@ -647,7 +658,10 @@ function buildForm(){
   const F=$("form");let h=`<div id="bannerSlot">${formBanner()}</div>`;
   SECTIONS.forEach(s=>{
     h+=`<section class="card"><h2>${s.t}${s.hint?`<span class="hint">· ${s.hint}</span>`:""}</h2>`;
-    if(s.f)h+=`<div class="grid">${s.f.map(fieldHTML).join("")}</div>`;
+    if(s.kind){const cl=isClient(cur),lock=!!cur.lrNo;
+      h+=`<div class="kind-row"><span class="kind-lbl">LR issued by</span><div class="seg" role="group" aria-label="LR issued by">${[["","Aditya Transport"],["client","Client's own LR"]].map(([v,l])=>`<button type="button" data-kind="${v}" aria-pressed="${(cur.kind||"")===v}"${lock?" disabled":""}>${l}</button>`).join("")}</div></div>`;
+      if(cl)h+=`<div class="grid" style="margin-bottom:12px">${fieldHTML({k:"clientLrNo",l:"Client's LR No. *",w:2,up:1})}${fieldHTML({k:"clientLrDate",l:"Client's LR Date",type:"date"})}</div><p class="kind-note">The company issues the LR. LR Desk keeps this trip under its own trip number, sends the driver the delivery details on WhatsApp, tracks delivery and sends the delivered notice. No LR is printed from here.</p>`;}
+    if(s.f)h+=`<div class="grid">${s.f.map(x=>fieldHTML(isClient(cur)&&x.k==="date"?Object.assign({},x,{l:"Loading Date"}):x)).join("")}</div>`;
     if(s.status){h+=`<div id="statWrap">${statusHTML()}</div>`}
     if(s.billed){
       const b=bill(cur),auto=cur.billTo!=="Other";
@@ -713,6 +727,7 @@ $("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.ta
 function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||"";$("i_billMob").value=b.mob||""}
 $("form").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.kind!==undefined&&!b.disabled){cur.kind=b.dataset.kind||undefined;if(!cur.kind){delete cur.kind;delete cur.clientLrNo;delete cur.clientLrDate}rebuild();markDirty();return}
   if(b.dataset.bill){const was=cur.billTo;if(b.dataset.bill==="Other"&&was!=="Other"){const x=bill(cur);cur.billName=x.name;cur.billAddr=x.addr;cur.billGst=x.gst;cur.billEmail=x.email;cur.billMob=x.mob}cur.billTo=b.dataset.bill;rebuild();markDirty()}
   else if(b.id==="bDeliver"){markDelivered(cur.lrNo,true,$("i_delDate").value)}
   else if(b.id==="bUndeliver"){markDelivered(cur.lrNo,false)}
@@ -826,7 +841,10 @@ function sheetPages(L){
 function sheetHTML(L){return sheetPages(L).join("")}
 let raf=0;function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(renderPreview)}
 function renderPreview(){
-  $("pv").innerHTML=sheetHTML(cur);fit();
+  const cl=isClient(cur);document.body.dataset.kind=cl?"client":"";
+  const chip=document.querySelector(".lrchip small");if(chip)chip.textContent=cl?"Trip No.":"LR No.";
+  $("bEmail").textContent=cl?"WhatsApp driver":"Send PDF";
+  $("pv").innerHTML=cl?`<div class="trip-card"><h3>Trip on the client's LR</h3><dl><dt>Trip No.</dt><dd class="mono">${esc(cur.lrNo||nextNo()+" (next)")}</dd><dt>Client's LR No.</dt><dd class="mono">${esc(cur.clientLrNo||"-")}</dd><dt>Client's LR Date</dt><dd>${esc(fd(cur.clientLrDate)||"-")}</dd><dt>Vehicle</dt><dd class="mono">${esc(cur.veh||"-")}</dd><dt>Driver</dt><dd>${esc([cur.driver,cur.driverMob].filter(Boolean).join(", ")||"-")}</dd><dt>From</dt><dd>${esc([cur.cnorName,cur.lp].filter(Boolean).join(", ")||"-")}</dd><dt>To</dt><dd>${esc([cur.cneeName,cur.dest].filter(Boolean).join(", ")||"-")}</dd><dt>Billed To</dt><dd>${esc(bill(cur).name||"-")}</dd></dl><p>No LR is printed for this trip. The company's own LR travels with the vehicle.</p></div>`:sheetHTML(cur);fit();
   $("pvNote").textContent=cur.lrNo?"":"* number is assigned when you save";
   $("lrNoTxt").textContent=cur.lrNo||(listLoaded?nextNo()+" (next)":(shownNext()==="Loading…"?"Loading…":shownNext()+" (checking…)"));
 }
@@ -955,18 +973,20 @@ async function save(){
   try{
     const body=JSON.parse(JSON.stringify(cur));const b=bill(cur);body.billName=b.name||"";body.billAddr=b.addr||"";body.billGst=b.gst||"";
     const isNew=!cur.lrNo;
+    if(isClient(cur)&&!String(cur.clientLrNo||"").trim()){toast("Enter the client's LR number first.");const f=$("i_clientLrNo");if(f)f.focus();return false}
     const j=await api("save",{lr:body});
     cur=j.lr;if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};
     const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i]=JSON.parse(JSON.stringify(cur));else all.unshift(JSON.parse(JSON.stringify(cur)));
     if(cur.placementNo){const pl=placements.find(x=>x.no===cur.placementNo);if(pl){const ds=plcDrops(pl);if(!pl.consignees||!pl.consignees.length)pl.consignees=ds;const k=+(cur.placementDrop||0);if(pl.consignees[k]&&!pl.consignees[k].lrNo)pl.consignees[k].lrNo=cur.lrNo;const n=pl.consignees.filter(x=>x.lrNo).length;pl.status=!pl.consignees.length?"LR Issued":n<pl.consignees.length?"Partly Issued":"LR Issued"}}
     dirty=false;try{localStorage.removeItem("lrDraft")}catch(e){}
-    fillLists();renderList();{const bs=$("bannerSlot");if(bs)bs.innerHTML=formBanner()}status();schedule();renderStatus();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);if(isNew)setTimeout(autoEmail,400);return true;
+    fillLists();renderList();{const bs=$("bannerSlot");if(bs)bs.innerHTML=formBanner()}status();schedule();renderStatus();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);if(isNew){if(isClient(cur))rebuild();setTimeout(autoEmail,400)}return true;
   }catch(e){if(e.code!=="auth")toast(e.message);return false}
   finally{busy(false)}
 }
 async function ensureSaved(){if(lockedForMe()){if(dirty){toast("You changed this saved LR. Send an edit request or discard your changes first.");return false}return true}if(dirty||!cur.lrNo)return await save();return true}
 function imagesReady(el){return Promise.all([...el.querySelectorAll("img")].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r})))}
 async function doPrint(){
+  if(isClient(cur)){toast("This trip uses the client's own LR, so there is nothing to print.");return}
   if(!(await ensureSaved()))return;
   const pa=$("printArea");pa.innerHTML=sheetHTML(cur);await imagesReady(pa);
   try{await document.fonts.ready}catch(e){}
@@ -988,6 +1008,7 @@ async function makePdf(scale,L){
   }finally{host.remove()}
 }
 async function pdf(){
+  if(isClient(cur)){toast("This trip uses the client's own LR, so there is no LR PDF.");return}
   if(!(await ensureSaved()))return;
   busy(true,"Preparing PDF…");
   try{const doc=await makePdf(2.4);doc.save(`LR_${cur.lrNo}.pdf`);toast("PDF downloaded")}
@@ -1041,7 +1062,7 @@ async function sendEmail(list,cc,auto,wa){
   if(j.lr){cur.emailLog=j.lr.emailLog;cur.waLog=j.lr.waLog;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0){all[i].emailLog=j.lr.emailLog;all[i].waLog=j.lr.waLog}}
   return j;
 }
-$("bEmail").onclick=async()=>{if(!(await ensureSaved()))return;openEmail()};
+$("bEmail").onclick=async()=>{if(!(await ensureSaved()))return;if(isClient(cur)){driverTrip(false);return}openEmail()};
 $("emCancel").onclick=()=>{$("emailBox").hidden=true};
 $("emailBox").addEventListener("click",e=>{if(e.target===$("emailBox"))$("emailBox").hidden=true});
 $("emSend").onclick=async()=>{
@@ -1054,7 +1075,15 @@ $("emSend").onclick=async()=>{
 function sentMsg(j){
   return `${cur.lrNo}: `+[j.sentTo?`emailed to ${j.sentTo}`:"",j.waSent?`WhatsApp sent to ${j.waSent}`:"",j.waFailed?`WhatsApp failed for ${j.waFailed}`:""].filter(Boolean).join(". ");
 }
+async function driverTrip(auto){
+  if(!settings.wa){toast("WhatsApp is not switched on yet.");return}
+  if(!splitMobs(cur.driverMob).length){if(!auto)toast("Enter the driver mobile first.");return}
+  try{const j=await api("driverTrip",{lrNo:cur.lrNo},60000);if(j.lr){cur.waLog=j.lr.waLog}
+    toast((auto?"Saved. ":"")+(j.waSent?`Driver WhatsApp sent to ${j.waSent}`:"")+(j.waFailed?` WhatsApp failed: ${j.waFailed}`:""))}
+  catch(e){if(e.code!=="auth")toast(`Driver WhatsApp failed: ${e.message}`)}
+}
 async function autoEmail(){
+  if(isClient(cur)){if(settings.wa&&settings.waDriver)await driverTrip(true);return}
   const list=settings.autoEmail?[...new Set([...splitEmails(cur.cnorEmail),...splitEmails(cur.cneeEmail)])].filter(okEmail):[];
   const wa=settings.wa&&settings.waLr?[...new Set([...splitMobs(cur.cnorMob),...splitMobs(cur.cneeMob),...(settings.waDriver?splitMobs(cur.driverMob):[])].map(waDigits))]:[];
   if(!settings.autoEmail&&!wa.length)return;
@@ -1169,7 +1198,7 @@ function clientDiff(a,b){a=normBill(a);b=normBill(b);
 }
 function myPending(lrNo){return requests.find(r=>r.lrNo===lrNo&&r.status==="Pending"&&me&&r.byEmail===me.email)}
 function formBanner(){
-  if(cur.placementNo&&!cur.lrNo)return `<div class="banner info"><div><b>Issuing LR for placement ${esc(cur.placementNo)}</b> (vehicle ${esc(cur.veh||"")}${cur.cneeName?", consignee "+esc(cur.cneeName):""}). Vehicle, driver and party details came from the placement. Add the invoice and material details, then tap <b>Save</b>.</div></div>`;
+  if(cur.placementNo&&!cur.lrNo)return `<div class="banner info"><div><b>Issuing LR for placement ${esc(cur.placementNo)}</b> (vehicle ${esc(cur.veh||"")}${cur.cneeName?", consignee "+esc(cur.cneeName):""}). Vehicle, driver and party details came from the placement. ${isClient(cur)?"This consignor issues its own LR: enter their LR number, then tap <b>Save</b>.":"Add the invoice and material details, then tap <b>Save</b>."} If the company issues its own LR, choose <b>Client\'s own LR</b> under LR details.</div></div>`;
   if(!lockedForMe())return "";
   const p=myPending(cur.lrNo);
   return `<div class="banner" id="lockBanner"><div><b>This LR is saved and locked.</b> You can view, print, email and mark it delivered. To change it, edit the fields and tap <b>Request edit</b>. An admin will review it.
@@ -1252,7 +1281,7 @@ function dFiltered(){
     if(DF.bill&&billOf(d)!==DF.bill)return false;if(DF.cnor&&d.cnorName!==DF.cnor)return false;if(DF.cnee&&d.cneeName!==DF.cnee)return false;
     if(DF.status==="transit"&&d.delivered)return false;if(DF.status==="delivered"&&!d.delivered)return false;
     if(DF.freight&&d.freight!==DF.freight)return false;if(DF.by&&(d.createdByName||d.createdBy)!==DF.by)return false;
-    if(q&&![d.lrNo,d.placementNo,d.veh,d.cnorName,d.cneeName,billOf(d),d.inv,d.dno,d.po,d.ewb,d.lp,d.dest].join(" ").toLowerCase().includes(q))return false;
+    if(q&&![d.lrNo,d.clientLrNo,d.placementNo,d.veh,d.cnorName,d.cneeName,billOf(d),d.inv,d.dno,d.po,d.ewb,d.lp,d.dest].join(" ").toLowerCase().includes(q))return false;
     return true;
   });
 }
@@ -1287,12 +1316,12 @@ function renderResults(){
   $("dTable").innerHTML=list.length?`<table class="dt"><thead><tr><th class="ck"><input type="checkbox" id="ckAll" aria-label="Select all on this page"${allOnPage?" checked":""}></th>
     ${th("lrNo","LR No.")}${th("date","Date")}${th("veh","Vehicle")}${th("cnor","Consignor")}${th("cnee","Consignee")}${th("bill","Billed To")}${th("inv","Invoice")}${th("val","Inv. Value","r")}${th("net","Net Wt (MT)","r")}${th("status","Status")}${th("by","Created By")}<th class="act">Actions</th></tr></thead>
     <tbody>${rows.map(d=>`<tr${dSel.has(d.lrNo)?' class="sel"':""}><td class="ck"><input type="checkbox" data-ck="${esc(d.lrNo)}" aria-label="Select ${esc(d.lrNo)}"${dSel.has(d.lrNo)?" checked":""}></td>
-      <td class="mono"><button type="button" class="lnk" data-open="${esc(d.lrNo)}">${esc(d.lrNo)}</button>${requests.some(r=>r.lrNo===d.lrNo&&r.status==="Pending")?' <span class="chip req sm" title="Pending request">Request</span>':""}</td>
+      <td class="mono"><button type="button" class="lnk" data-open="${esc(d.lrNo)}">${esc(d.lrNo)}</button>${isClient(d)?`<div class="sub">Client LR ${esc(d.clientLrNo||"")}</div>`:""}${requests.some(r=>r.lrNo===d.lrNo&&r.status==="Pending")?' <span class="chip req sm" title="Pending request">Request</span>':""}</td>
       <td class="nw">${fd(d.date)}</td><td class="mono nw">${esc(d.veh)}</td><td>${esc(d.cnorName)}</td><td>${esc(d.cneeName)}</td><td>${esc(billOf(d))}</td><td class="nw">${esc(d.inv)}</td>
       <td class="r nw">${d.invVal?inr(d.invVal):""}</td><td class="r mono">${netOf(d)?netOf(d).toFixed(3):""}</td>
       <td>${d.delivered?`<span class="chip done sm">Delivered${d.deliveredOn?" "+fd(d.deliveredOn).slice(0,6):""}</span>`:`<span class="chip transit sm">In Transit</span>`}</td>
       <td class="nw">${esc(d.createdByName||d.createdBy||"")}</td>
-      <td class="act nw"><button type="button" class="btn sm" data-open="${esc(d.lrNo)}">Open</button><button type="button" class="btn sm" data-pdf="${esc(d.lrNo)}">PDF</button>${d.delivered?"":`<button type="button" class="btn sm" data-dlv="${esc(d.lrNo)}">Delivered</button>`}</td></tr>`).join("")}</tbody></table>`
+      <td class="act nw"><button type="button" class="btn sm" data-open="${esc(d.lrNo)}">Open</button>${isClient(d)?"":`<button type="button" class="btn sm" data-pdf="${esc(d.lrNo)}">PDF</button>`}${d.delivered?"":`<button type="button" class="btn sm" data-dlv="${esc(d.lrNo)}">Delivered</button>`}</td></tr>`).join("")}</tbody></table>`
     :`<div class="empty">No LRs match these filters.<br><button type="button" class="btn" id="fReset2">Clear filters</button></div>`;
   $("dPager").innerHTML=list.length>dPer?`<button type="button" class="btn sm" data-pg="${dPage-1}"${dPage<=1?" disabled":""}>‹ Prev</button><span>Page ${dPage} of ${pages}</span><button type="button" class="btn sm" data-pg="${dPage+1}"${dPage>=pages?" disabled":""}>Next ›</button>`:"";
   const n=dSel.size;$("dBulk").hidden=!n;$("dBulkN").textContent=`${n} selected`;
@@ -1327,7 +1356,7 @@ async function downloadOne(no,btn){
   finally{if(btn){btn.disabled=false;btn.textContent="PDF"}}
 }
 $("bZip").onclick=async()=>{
-  const sel=$("dTable")._list.filter(d=>dSel.has(d.lrNo));if(!sel.length)return;
+  const sel=$("dTable")._list.filter(d=>dSel.has(d.lrNo)&&!isClient(d));if(!sel.length){toast("No LR PDFs to make. Trips on the client's own LR have no PDF.");return}
   if(sel.length>60){toast("Please select 60 LRs or fewer for one zip file.");return}
   const b=$("bZip");b.disabled=true;
   try{
@@ -1339,7 +1368,7 @@ $("bZip").onclick=async()=>{
   finally{b.disabled=false;b.textContent="Download PDFs (zip)"}
 };
 function exportRows(list){
-  return list.map(d=>{const T=totals(d),b=bill(d);return{"LR No":d.lrNo,"Placement No":d.placementNo||"","LR Date":fd(d.date),"Status":d.delivered?"Delivered":"In Transit","Delivered On":fd(d.deliveredOn||""),"Freight":d.freight||"",
+  return list.map(d=>{const T=totals(d),b=bill(d);return{"LR No":d.lrNo,"Client LR No":d.clientLrNo||"","Placement No":d.placementNo||"","LR Date":fd(d.date),"Status":d.delivered?"Delivered":"In Transit","Delivered On":fd(d.deliveredOn||""),"Freight":d.freight||"",
     "Vehicle No":d.veh||"","Driver":d.driver||"","Consignor":d.cnorName||"","Consignee":d.cneeName||"","Billed To":d.billTo||"","Billed Party":b.name||"","Billed GSTIN":b.gst||"",
     "Invoice No":d.inv||"","Invoice Date":fd(d.invDate||""),"Invoice Value":num(d.invVal)||"","P.O. No":d.po||"","E-Way Bill":d.ewb||"","Delivery No":d.dno||"","Loading Point":d.lp||"","Destination":d.dest||"",
     "Gross Wt (MT)":+T.g.toFixed(3),"Net Wt (MT)":+T.n.toFixed(3),"Rcvd Gross Wt (MT)":+T.r.toFixed(3),"Created By":d.createdByName||d.createdBy||"","Last Emailed":((d.emailLog||[]).slice(-1)[0]||{}).at||""}});
@@ -1510,6 +1539,7 @@ function issueLR(no,idx){
   Object.assign(L,{veh:p.veh,driver:p.driver,driverMob:p.driverMob,lp:p.lp,dest:d.dest||"",
     cnorName:p.cnorName,cnorAddr:p.cnorAddr,cnorGst:p.cnorGst,cnorEmail:p.cnorEmail,cnorMob:p.cnorMob||"",cnorLoc:p.cnorLoc||"",cneeLoc:d.loc||"",cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",cneeMob:d.mob||"",
     billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0});
+  {const key=String(p.cnorName||"").trim().toLowerCase(),last=all.filter(x=>String(x.cnorName||"").trim().toLowerCase()===key).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];if(last&&last.kind==="client")L.kind="client"}
   if(p.material)L.items=[Object.assign(blankItem(),{desc:p.material})];
   load(L);dirty=true;status();setMode("form");
   toast(`LR form filled from ${p.no}. Add the invoice and material details, then Save.`);
