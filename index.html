@@ -277,6 +277,8 @@ body[data-mode="plc"] .main,body[data-mode="plc"] .tabs{display:none!important}
 .modal-in .status{white-space:normal;line-height:1.45}
 .btn.danger-bg{background:var(--danger);border-color:var(--danger);color:#fff}
 .f input.ro{background:var(--chip);color:var(--muted);cursor:default}
+.theme-btn{display:inline-flex;align-items:center;gap:5px}.theme-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+@media (max-width:560px){.theme-btn span{display:none}}
 .em-sec{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px}
 #waSec{display:flex;flex-direction:column;gap:12px}
 .em-sec.wa{color:#128C4A;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
@@ -381,6 +383,7 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
 }
 
 </style>
+<script>try{var t=localStorage.getItem("lrTheme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
 <header class="top">
@@ -392,7 +395,7 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
       <button type="button" id="vDash" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Dashboard</span></button>
       <button type="button" id="vReq" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4zM8 9h8M8 12h5"/></svg><span>Requests</span><em class="pill-n red" id="reqBadge" hidden>0</em></button>
     </nav>
-    <div class="user"><span class="avatar" id="avatar" aria-hidden="true">?</span><div class="who-box"><span id="who"></span></div><button class="btn ghost sm" id="bLock" type="button">Sign out</button></div>
+    <div class="user"><span class="avatar" id="avatar" aria-hidden="true">?</span><div class="who-box"><span id="who"></span></div><button class="btn ghost sm theme-btn" id="bTheme" type="button" title="Theme" aria-label="Theme: automatic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span id="themeLbl">Auto</span></button><button class="btn ghost sm" id="bLock" type="button">Sign out</button></div>
   </div>
   <div class="bar2">
     <div class="doc">
@@ -1553,6 +1556,13 @@ $("pcGo").onclick=async()=>{
   finally{b.disabled=false;b.textContent="Cancel placement"}
 };
 $("pcReasons").addEventListener("change",e=>{if(e.target.name==="pcR"){const o=e.target.value==="other";$("pcReason").hidden=!o;if(o)$("pcReason").focus();$("pcErr").textContent=""}});
+/* ---------- Light / dark switch (Auto follows the device) ---------- */
+function applyTheme(){let t="auto";try{t=localStorage.getItem("lrTheme")||"auto"}catch(e){}
+  if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
+  $("themeLbl").textContent={auto:"Auto",light:"Light",dark:"Dark"}[t];$("bTheme").setAttribute("aria-label","Theme: "+{auto:"automatic",light:"light",dark:"dark"}[t]+". Click to change.")}
+$("bTheme").onclick=()=>{let t="auto";try{t=localStorage.getItem("lrTheme")||"auto"}catch(e){}
+  const n={auto:"light",light:"dark",dark:"auto"}[t]||"light";try{localStorage.setItem("lrTheme",n)}catch(e){}applyTheme();toast("Theme: "+{auto:"Auto (follows your device)",light:"Light",dark:"Dark"}[n])};
+applyTheme();
 /* ---------- Start ---------- */
 (function start(){
   let draft=null;try{draft=JSON.parse(localStorage.getItem("lrDraft")||"null")}catch(e){}
