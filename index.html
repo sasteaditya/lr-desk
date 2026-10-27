@@ -483,16 +483,10 @@ body:not([data-role="Admin"]) .admin-only{display:none!important}
       <div class="f w2"><label for="p_material">Material</label><input id="p_material" placeholder="CRCA pipes"></div>
       <div class="f w2"><label for="p_qty">Approx. quantity</label><input id="p_qty" placeholder="18 MT"></div>
     </div>
-    <div class="pl-sec">Loading at (Consignor) *</div>
-    <div class="grid">
-      <div class="f w2"><label for="p_cnorName">Name</label><input id="p_cnorName" list="dlParty"></div>
-      <div class="f w2"><label for="p_lp">Loading point</label><input id="p_lp" list="dlPlace"></div>
-      <div class="f"><label for="p_cnorEmail">Email</label><input id="p_cnorEmail" type="email" multiple></div><div class="f"><label for="p_cnorMob">WhatsApp Mobile</label><input id="p_cnorMob" type="tel"></div>
-      <div class="f"><label for="p_cnorGst">GSTIN</label><input id="p_cnorGst"></div>
-      <div class="f"><label for="p_cnorAddr">Address</label><input id="p_cnorAddr"></div>
-      <div class="f w4"><label for="p_cnorLoc">Loading location for driver (paste Google Maps link, optional)</label><input id="p_cnorLoc" placeholder="https://maps.app.goo.gl/..."></div>
-    </div>
-    <div class="pl-sec">Delivery to (Consignees) <span class="pl-hint">· add more if one vehicle delivers to several parties; each gets its own LR</span></div>
+    <div class="pl-sec">Loading at (Consignors) * <span class="pl-hint">· add more if one vehicle loads from several parties</span></div>
+    <div id="plCnors" class="drops"></div>
+    <button type="button" class="btn ghost" id="bAddCnor">+ Add another consignor</button>
+    <div class="pl-sec">Delivery to (Consignees) <span class="pl-hint">· each consignee block is one LR; add more for several deliveries</span></div>
     <div id="plDrops" class="drops"></div>
     <button type="button" class="btn ghost" id="bAddDrop">+ Add another consignee</button>
     <div class="pl-sec">Billed To</div>
@@ -1447,23 +1441,25 @@ $("reqs").addEventListener("click",async e=>{
 });
 /* ===================== Vehicle placements ===================== */
 let placements=[],plcFilter="open",plcEdit=null;
-const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","cnorName","cnorAddr","cnorGst","cnorEmail","cnorMob","cnorLoc","lp","billName","billEmail","billMob","remarks"];
+const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","billName","billEmail","billMob","remarks"];
 function plcDrops(p){return p.consignees&&p.consignees.length?p.consignees:(p.cneeName||p.dest?[{name:p.cneeName,addr:p.cneeAddr,gst:p.cneeGst,email:p.cneeEmail,dest:p.dest,lrNo:p.lrNo||""}]:[])}
+function plcCnors(p){return p.consignors&&p.consignors.length?p.consignors:(p.cnorName?[{name:p.cnorName,addr:p.cnorAddr,gst:p.cnorGst,email:p.cnorEmail,mob:p.cnorMob,loc:p.cnorLoc,lp:p.lp}]:[])}
+function plcFrom(p,d){const c=plcCnors(p);return c[Math.min(+(d&&d.from)||0,Math.max(0,c.length-1))]||{}}
 function plcStatusChip(p){const d=plcDrops(p),n=d.filter(x=>x.lrNo).length;
   return p.status==="Cancelled"?`<span class="chip draft sm">Cancelled</span>`:p.status==="LR Issued"?`<span class="chip done sm">LR Issued</span>`:p.status==="Partly Issued"?`<span class="chip req sm">LR ${n} of ${d.length} issued</span>`:`<span class="chip transit sm">Vehicle Placed</span>`}
-function plcBillName(p){return p.billTo==="Consignor"?p.cnorName:p.billTo==="Consignee"?plcDrops(p).map(x=>x.name).filter(Boolean).join(" + "):p.billName}
+function plcBillName(p){const u=a=>[...new Set(a.filter(Boolean))].join(" + ");return p.billTo==="Consignor"?u(plcCnors(p).map(x=>x.name)):p.billTo==="Consignee"?u(plcDrops(p).map(x=>x.name)):p.billName}
 function renderPlc(){
   const openN=placements.filter(p=>p.status==="Vehicle Placed"||p.status==="Partly Issued").length;$("plOpenN").textContent=openN?`(${openN})`:"";
   if(document.body.dataset.mode!=="plc")return;
   const q=($("plQ").value||"").trim().toLowerCase();
   const list=placements.filter(p=>(plcFilter==="all")||(plcFilter==="open"&&(p.status==="Vehicle Placed"||p.status==="Partly Issued"))||(plcFilter==="issued"&&p.status==="LR Issued")||(plcFilter==="cancelled"&&p.status==="Cancelled"))
-    .filter(p=>!q||[p.no,p.veh,p.driver,p.driverMob,p.cnorName,plcDrops(p).map(x=>x.name+" "+x.dest).join(" "),plcBillName(p),p.lrNo].join(" ").toLowerCase().includes(q))
+    .filter(p=>!q||[p.no,p.veh,p.driver,p.driverMob,plcCnors(p).map(x=>x.name+" "+(x.lp||"")).join(" "),plcDrops(p).map(x=>x.name+" "+x.dest).join(" "),plcBillName(p),p.lrNo].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   document.querySelectorAll("#plTabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===plcFilter)));
   $("plList").innerHTML=list.length?list.map(p=>`<article class="pc">
     <div class="pc-top"><span class="pc-veh">${esc(p.veh)}</span>${plcStatusChip(p)}<span class="pc-no">${esc(p.no)}</span><span class="pc-date">Placed ${fd(p.placedOn)}</span></div>
-    <div class="pc-route">Loading at <b>${esc(p.cnorName)}</b>${p.lp?` <span>(${esc(p.lp)})</span>`:""}</div>
-    ${plcDrops(p).length?`<div class="pc-drops">${plcDrops(p).map((d,i,a)=>`<div class="pc-drop"><span class="n">${a.length>1?"Drop "+(i+1):"Deliver to"}</span><span class="nm"><b>${esc(d.name||"-")}</b>${d.dest?` <span>(${esc(d.dest)})</span>`:""}</span>${d.lrNo?`<button type="button" class="btn sm" data-open="${esc(d.lrNo)}">Open LR ${esc(d.lrNo)}</button>`:p.status!=="Cancelled"?`<button type="button" class="btn sm primary" data-issue="${esc(p.no)}" data-drop="${i}">Issue LR</button>`:""}</div>`).join("")}</div>`:""}
+    <div class="pc-route">Loading at ${plcCnors(p).map(c=>`<b>${esc(c.name)}</b>${c.lp?` <span>(${esc(c.lp)})</span>`:""}`).join(" + ")||"-"}</div>
+    ${plcDrops(p).length?`<div class="pc-drops">${plcDrops(p).map((d,i,a)=>`<div class="pc-drop"><span class="n">${a.length>1?"LR "+(i+1):"Deliver to"}</span><span class="nm">${plcCnors(p).length>1?`<span>${esc(plcFrom(p,d).name||"")} → </span>`:""}<b>${esc(d.name||"-")}</b>${d.dest?` <span>(${esc(d.dest)})</span>`:""}</span>${d.lrNo?`<button type="button" class="btn sm" data-open="${esc(d.lrNo)}">Open LR ${esc(d.lrNo)}</button>`:p.status!=="Cancelled"?`<button type="button" class="btn sm primary" data-issue="${esc(p.no)}" data-drop="${i}">Issue LR</button>`:""}</div>`).join("")}</div>`:""}
     <div class="pc-meta">${[p.vehType,p.capacity?p.capacity+" MT":"",p.driver?`Driver ${esc(p.driver)}${p.driverMob?" · "+esc(p.driverMob):""}`:"",plcBillName(p)?"Billed to "+esc(plcBillName(p)):"",p.loadDate?"Loading "+fd(p.loadDate)+(p.loadTime?" "+esc(p.loadTime):""):""].filter(Boolean).map(x=>`<span>${x}</span>`).join("")}</div>
     ${p.status==="Cancelled"?`<div class="pc-mail">Cancelled${p.cancelledAt?" "+esc(p.cancelledAt):""}${p.cancelledBy?" by "+esc(p.cancelledBy):""}${p.cancelReason?`: ${esc(p.cancelReason)}`:""}</div>`:""}
     ${(p.emailLog||[]).length?`<div class="pc-mail">✉ Last emailed ${esc(String(p.emailLog.slice(-1)[0].at||"").replace("T"," ").slice(0,16))} to ${esc(p.emailLog.slice(-1)[0].to)}</div>`:""}
@@ -1477,21 +1473,38 @@ $("vPlc").onclick=()=>setMode("plc");
 $("bNewPlc").onclick=()=>openPlc(null);
 function setPlcBill(v){$("plBillTo").dataset.v=v;document.querySelectorAll("#plBillTo button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));$("plOther").hidden=v!=="Other";plcNote()}
 $("plBillTo").addEventListener("click",e=>{const b=e.target.closest("button[data-v]");if(b)setPlcBill(b.dataset.v)});
-function dropHTML(i,c){c=c||{};return `<div class="drop" data-i="${i}"><div class="drop-h"><span>Consignee ${i+1}</span>${i?`<button type="button" class="btn ghost sm danger" data-rmdrop="${i}">Remove</button>`:""}</div>
-  <div class="grid"><div class="f w2"><label>Name</label><input data-dk="name" list="dlParty" value="${esc(c.name)}"></div><div class="f w2"><label>Destination</label><input data-dk="dest" list="dlPlace" value="${esc(c.dest)}"></div>
+function cnorHTML(i,c){c=c||{};return `<div class="drop cnor" data-i="${i}"><div class="drop-h"><span>Consignor ${i+1}</span>${i?`<button type="button" class="btn ghost sm danger" data-rmcnor="${i}">Remove</button>`:""}</div>
+  <div class="grid"><div class="f w2"><label>Name${i?"":" *"}</label><input data-ck="name" list="dlParty" value="${esc(c.name)}"></div><div class="f w2"><label>Loading point</label><input data-ck="lp" list="dlPlace" value="${esc(c.lp)}"></div>
+  <div class="f"><label>Email</label><input data-ck="email" type="email" multiple value="${esc(c.email)}"></div><div class="f"><label>WhatsApp Mobile</label><input data-ck="mob" type="tel" value="${esc(c.mob)}"></div><div class="f"><label>GSTIN</label><input data-ck="gst" value="${esc(c.gst)}"></div><div class="f"><label>Address</label><input data-ck="addr" value="${esc(c.addr)}"></div>
+  <div class="f w4"><label>Loading location for driver (paste Google Maps link, optional)</label><input data-ck="loc" value="${esc(c.loc)}" placeholder="https://maps.app.goo.gl/..."></div></div></div>`}
+function readCnors(){return [...document.querySelectorAll("#plCnors .cnor")].map(d=>{const o={};d.querySelectorAll("[data-ck]").forEach(x=>o[x.dataset.ck]=x.value.trim());return o})}
+function renderCnors(list){if(!list.length)list=[{}];$("plCnors").innerHTML=list.map((c,i)=>cnorHTML(i,c)).join("");$("bAddCnor").disabled=list.length>=6}
+function fromSel(c,cn){if(cn.length<2)return"";const v=Math.min(+(c.from)||0,cn.length-1);return `<div class="f w4"><label>Loading from (consignor)</label><select data-dk="from">${cn.map((x,k)=>`<option value="${k}"${k===v?" selected":""}>${esc(x.name||"Consignor "+(k+1))}</option>`).join("")}</select></div>`}
+function dropHTML(i,c){c=c||{};const cn=readCnors();return `<div class="drop" data-i="${i}"><div class="drop-h"><span>${cn.length>1?"LR "+(i+1)+": Consignee":"Consignee "+(i+1)}</span>${i?`<button type="button" class="btn ghost sm danger" data-rmdrop="${i}">Remove</button>`:""}</div>
+  <div class="grid">${fromSel(c,cn)}<div class="f w2"><label>Name</label><input data-dk="name" list="dlParty" value="${esc(c.name)}"></div><div class="f w2"><label>Destination</label><input data-dk="dest" list="dlPlace" value="${esc(c.dest)}"></div>
   <div class="f"><label>Email</label><input data-dk="email" type="email" multiple value="${esc(c.email)}"></div><div class="f"><label>WhatsApp Mobile</label><input data-dk="mob" type="tel" value="${esc(c.mob)}"></div><div class="f"><label>GSTIN</label><input data-dk="gst" value="${esc(c.gst)}"></div><div class="f"><label>Address</label><input data-dk="addr" value="${esc(c.addr)}"></div><div class="f w4"><label>Delivery location for driver (paste Google Maps link, optional)</label><input data-dk="loc" value="${esc(c.loc)}" placeholder="https://maps.app.goo.gl/..."></div></div></div>`}
 function readDrops(){return [...document.querySelectorAll("#plDrops .drop")].map(d=>{const o={};d.querySelectorAll("[data-dk]").forEach(x=>o[x.dataset.dk]=x.value.trim());return o})}
 function renderDrops(list){if(!list.length)list=[{}];$("plDrops").innerHTML=list.map((c,i)=>dropHTML(i,c)).join("");$("bAddDrop").disabled=list.length>=8}
+$("bAddCnor").onclick=()=>{const l=readCnors();l.push({});renderCnors(l);const k=l.length-1,d=readDrops();
+  if(d.length&&d.length<l.length&&d.every(x=>(x.name||"")===(d[0].name||""))){d.push(Object.assign({},d[0],{from:String(k)}));renderDrops(d);toast(`LR ${d.length} added: same consignee, loading from consignor ${k+1}. Change it below if needed.`)}else renderDrops(d);
+  const last=document.querySelector("#plCnors .cnor:last-child [data-ck=name]");if(last)last.focus();plcNote()};
+$("plCnors").addEventListener("click",e=>{const b=e.target.closest("[data-rmcnor]");if(!b)return;const k=+b.dataset.rmcnor,l=readCnors();l.splice(k,1);renderCnors(l);
+  let d=readDrops();d=d.filter((x,i)=>!(+x.from===k&&d.some((y,j)=>j!==i&&(y.name||"")===(x.name||"")&&+y.from!==k)));d.forEach(x=>{const f=+x.from||0;x.from=String(f===k?0:f>k?f-1:f)});renderDrops(d);plcNote()});
+$("plCnors").addEventListener("input",e=>{const t=e.target;if(t.dataset.ck==="gst"){const q=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(q,q)}catch(_){}}
+  if(t.dataset.ck==="name"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){const box=t.closest(".cnor");[["addr","addr"],["gst","gst"],["email","email"],["mob","mob"],["loc","loc"]].forEach(([f,k])=>{if(party[k])box.querySelector(`[data-ck=${f}]`).value=party[k]})}
+    if(readCnors().length>1)renderDrops(readDrops())}
+  plcNote()});
 $("bAddDrop").onclick=()=>{const l=readDrops();l.push({});renderDrops(l);const last=document.querySelector("#plDrops .drop:last-child [data-dk=name]");if(last)last.focus();plcNote()};
 $("plDrops").addEventListener("click",e=>{const b=e.target.closest("[data-rmdrop]");if(!b)return;const l=readDrops();l.splice(+b.dataset.rmdrop,1);renderDrops(l);plcNote()});
 $("plDrops").addEventListener("input",e=>{const t=e.target;if(t.dataset.dk==="gst"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
   if(t.dataset.dk==="name"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){const box=t.closest(".drop");[["addr","addr"],["gst","gst"],["email","email"],["mob","mob"],["loc","loc"]].forEach(([f,k])=>{if(party[k])box.querySelector(`[data-dk=${f}]`).value=party[k]})}}
   plcNote()});
 function plcNote(){
-  const v=$("plBillTo").dataset.v,bill=v==="Consignor"?$("p_cnorEmail").value:v==="Consignee"?readDrops().map(d=>d.email).join(","):$("p_billEmail").value;
-  const em=[...new Set([...splitEmails(bill),...splitEmails($("p_cnorEmail").value)])].filter(okEmail);
-  const mb=v==="Consignor"?$("p_cnorMob").value:v==="Consignee"?readDrops().map(d=>d.mob).join(","):$("p_billMob").value;
-  const wa=[...new Set([...splitMobs(mb),...splitMobs($("p_cnorMob").value)])];
+  const cn=readCnors(),cE=cn.map(c=>c.email).join(","),cM=cn.map(c=>c.mob).join(",");
+  const v=$("plBillTo").dataset.v,bill=v==="Consignor"?cE:v==="Consignee"?readDrops().map(d=>d.email).join(","):$("p_billEmail").value;
+  const em=[...new Set([...splitEmails(bill),...splitEmails(cE)])].filter(okEmail);
+  const mb=v==="Consignor"?cM:v==="Consignee"?readDrops().map(d=>d.mob).join(","):$("p_billMob").value;
+  const wa=[...new Set([...splitMobs(mb),...splitMobs(cM)])];
   $("plMailNote").textContent=(!settings.plcEmail?"Vehicle Placed emails are switched off in Settings.":em.length?`On save, a "Vehicle Placed" email goes to: ${em.join(", ")}.`:"Add the Billed To party's or consignor's email to notify them.")+(settings.wa?(wa.length?` WhatsApp goes to: ${wa.join(", ")}.`:" Add a WhatsApp mobile to also notify them on WhatsApp.")+(settings.waDrvLoad&&splitMobs($("p_driverMob").value).length?" The driver gets the loading address and Maps link on WhatsApp (Marathi).":""):"");
 }
 let plcReplaceOf=null;
@@ -1499,7 +1512,7 @@ function openPlc(no){
   if(!unlocked){showLock("Sign in first.");return}
   plcEdit=no?placements.find(p=>p.no===no):null;
   let p=plcEdit||{placedOn:today(),billTo:"Consignee"};
-  PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)el.value=p[k]||""});renderDrops(plcDrops(p).map(d=>Object.assign({},d)));
+  PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)el.value=p[k]||""});renderCnors(plcCnors(p).map(c=>Object.assign({},c)));renderDrops(plcDrops(p).map(d=>Object.assign({},d)));
   if(!p.placedOn)$("p_placedOn").value=today();
   setPlcBill(p.billTo||"Consignee");
   $("plTitle").textContent=plcEdit?`Edit placement ${plcEdit.no}`:"New vehicle placement";
@@ -1508,9 +1521,7 @@ function openPlc(no){
 }
 $("plcBox").addEventListener("input",e=>{
   const t=e.target;
-  if(t.id==="p_veh"||t.id==="p_cnorGst"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
-  if(t.id==="p_cnorName"){const pre="cnor",party=window._parties?.get(t.value.trim().toLowerCase());
-    if(party&&t.value.trim())[["Addr","addr"],["Gst","gst"],["Email","email"],["Mob","mob"],["Loc","loc"]].forEach(([f,k])=>{if(party[k])$("p_"+pre+f).value=party[k]})}
+  if(t.id==="p_veh"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
   if(t.id==="p_billName"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){if(party.email)$("p_billEmail").value=party.email;if(party.mob)$("p_billMob").value=party.mob}}
   plcNote();
 });
@@ -1518,10 +1529,12 @@ $("plCancel").onclick=()=>{$("plcBox").hidden=true};
 $("plcBox").addEventListener("click",e=>{if(e.target===$("plcBox"))$("plcBox").hidden=true});
 $("plSave").onclick=async()=>{
   const p=Object.assign({},plcEdit||{});PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)p[k]=el.value.trim()});p.billTo=$("plBillTo").dataset.v;
-  p.consignees=readDrops().filter(d=>d.name||d.dest);
+  p.consignors=readCnors().filter(c=>c.name);
+  {const c0=p.consignors[0]||{};p.cnorName=c0.name||"";p.cnorAddr=c0.addr||"";p.cnorGst=c0.gst||"";p.cnorEmail=c0.email||"";p.cnorMob=c0.mob||"";p.cnorLoc=c0.loc||"";p.lp=c0.lp||""}
+  p.consignees=readDrops().filter(d=>d.name||d.dest).map(d=>Object.assign(d,{from:Math.min(+d.from||0,Math.max(0,p.consignors.length-1))}));
   if(p.billTo==="Consignee"&&!p.consignees.length){$("plErr").textContent="Add at least one consignee, or choose another Billed To option.";return}
   if(!p.veh){$("plErr").textContent="Enter the vehicle number.";$("p_veh").focus();return}
-  if(!p.cnorName){$("plErr").textContent="Enter the consignor (where the vehicle will load).";$("p_cnorName").focus();return}
+  if(!p.cnorName){$("plErr").textContent="Enter the consignor (where the vehicle will load).";const f=document.querySelector("#plCnors [data-ck=name]");if(f)f.focus();return}
   const b=$("plSave");b.disabled=true;$("plErr").textContent="";b.textContent="Saving…";
   try{
     const j=await api("savePlacement",{p},60000);
@@ -1534,12 +1547,12 @@ $("plSave").onclick=async()=>{
 function issueLR(no,idx){
   const p=placements.find(x=>x.no===no);if(!p)return;
   if(dirty&&!confirmLeave())return;
-  const d=plcDrops(p)[idx||0]||{};
+  const d=plcDrops(p)[idx||0]||{},c=plcFrom(p,d);
   const L=blankLR();
-  Object.assign(L,{veh:p.veh,driver:p.driver,driverMob:p.driverMob,lp:p.lp,dest:d.dest||"",
-    cnorName:p.cnorName,cnorAddr:p.cnorAddr,cnorGst:p.cnorGst,cnorEmail:p.cnorEmail,cnorMob:p.cnorMob||"",cnorLoc:p.cnorLoc||"",cneeLoc:d.loc||"",cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",cneeMob:d.mob||"",
+  Object.assign(L,{veh:p.veh,driver:p.driver,driverMob:p.driverMob,lp:c.lp||"",dest:d.dest||"",
+    cnorName:c.name||"",cnorAddr:c.addr||"",cnorGst:c.gst||"",cnorEmail:c.email||"",cnorMob:c.mob||"",cnorLoc:c.loc||"",cneeLoc:d.loc||"",cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",cneeMob:d.mob||"",
     billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0});
-  {const key=String(p.cnorName||"").trim().toLowerCase(),last=all.filter(x=>String(x.cnorName||"").trim().toLowerCase()===key).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];if(last&&last.kind==="client")L.kind="client"}
+  {const key=String(c.name||"").trim().toLowerCase(),last=all.filter(x=>String(x.cnorName||"").trim().toLowerCase()===key).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];if(last&&last.kind==="client")L.kind="client"}
   if(p.material)L.items=[Object.assign(blankItem(),{desc:p.material})];
   load(L);dirty=true;status();setMode("form");
   toast(`LR form filled from ${p.no}. Add the invoice and material details, then Save.`);
@@ -1548,7 +1561,7 @@ async function plcShare(no){
   const p=placements.find(x=>x.no===no);if(!p)return;
   const link=settings.trackUrl&&/^https:\/\//.test(settings.trackUrl)?`${settings.trackUrl}?lr=${encodeURIComponent(p.no)}&veh=${encodeURIComponent(String(p.veh).replace(/\s+/g,""))}`:"";
   const text=[`*Aditya Transport: Vehicle Placed*`,`Placement: ${p.no}`,`Vehicle: ${p.veh}${p.vehType?" ("+p.vehType+")":""}`,p.capacity?`Capacity: ${p.capacity} MT`:"",p.driver?`Driver: ${p.driver}${p.driverMob?" - "+p.driverMob:""}`:"",
-    `Loading at: ${[p.cnorName,p.lp].filter(Boolean).join(", ")}`,...plcDrops(p).map((d,i,a)=>`${a.length>1?"Drop "+(i+1):"Delivery to"}: ${[d.name,d.dest].filter(Boolean).join(", ")}`),p.loadDate?`Expected loading: ${fd(p.loadDate)} ${p.loadTime||""}`:"",link?`Track: ${link}`:""].filter(Boolean).join("\n");
+    ...plcCnors(p).map((c,i,a)=>`${a.length>1?"Loading "+(i+1):"Loading at"}: ${[c.name,c.lp].filter(Boolean).join(", ")}`),...plcDrops(p).map((d,i,a)=>`${a.length>1?"Drop "+(i+1):"Delivery to"}: ${[d.name,d.dest].filter(Boolean).join(", ")}`),p.loadDate?`Expected loading: ${fd(p.loadDate)} ${p.loadTime||""}`:"",link?`Track: ${link}`:""].filter(Boolean).join("\n");
   try{if(navigator.share){await navigator.share({text});return}}catch(e){if(e&&e.name==="AbortError")return}
   window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener");
 }
@@ -1566,7 +1579,8 @@ let pcNo=null;
 function openCancel(no){
   const pl=placements.find(x=>x.no===no);if(!pl)return;pcNo=no;
   $("pcTitle").textContent=`Cancel ${pl.no} (${pl.veh})`;
-  const em=[...new Set([...splitEmails(pl.billTo==="Consignor"?pl.cnorEmail:pl.billTo==="Consignee"?plcDrops(pl).map(d=>d.email).join(","):pl.billEmail),...splitEmails(pl.cnorEmail)])].filter(okEmail);
+  const cE=plcCnors(pl).map(c=>c.email).join(",");
+  const em=[...new Set([...splitEmails(pl.billTo==="Consignor"?cE:pl.billTo==="Consignee"?plcDrops(pl).map(d=>d.email).join(","):pl.billEmail),...splitEmails(cE)])].filter(okEmail);
   $("pcNotify").checked=em.length>0;$("pcNotify").disabled=!em.length||!settings.plcEmail;
   $("pcWho").textContent=!settings.plcEmail?"Placement emails are switched off in Settings.":em.length?`Sends a "Vehicle Placement Cancelled" email to ${em.join(", ")}`:"No email on this placement, so nobody will be emailed.";
   document.querySelectorAll('input[name="pcR"]').forEach(r=>r.checked=false);$("pcReason").value="";$("pcReason").hidden=true;$("pcErr").textContent="";$("pcBox").hidden=false;
