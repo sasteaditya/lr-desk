@@ -639,10 +639,10 @@ const f3=v=>{const n=num(v);return n===null?"":n.toFixed(3)};
 const inr=v=>{const n=num(v);return n===null?"":n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})};
 const CONDS=["Tarpaulin Covered","Water Inside","Water Outside","Rusty Condition","White Rust","Coil / Packet Tampered","Edge Damage","Sample Received","Short Received","Other (see remarks)"];
 const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",rem:""});
-const blankLR=()=>({lrNo:"",date:today(),freight:"Pre-Paid",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
+const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
 const SECTIONS=[
- {t:"LR details",kind:1,f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["Pre-Paid","To Pay","To Be Billed"]},{k:"placementNo",l:"Placement No. (from Placements)",ro:1,w:2}]},
+ {t:"LR details",kind:1,f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["To Be Billed","Pre-Paid","To Pay"]},{k:"placementNo",l:"Placement No. (from Placements)",ro:1,w:2}]},
  {t:"Delivery status",status:1},
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
