@@ -291,6 +291,7 @@ body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
 .dt .sub{font-size:11.5px;color:var(--muted);font-family:var(--body,system-ui)}
 .zoho-box{margin-top:12px;display:flex;flex-direction:column;gap:8px}
 .zh-row{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}.zh-row small{color:var(--muted)}
+.zh-pays{display:flex;flex-wrap:wrap;gap:6px}.zh-pays span{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink)}
 .zh-msg{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--field)}
 .zh-msg.ok{color:#15803D;background:color-mix(in srgb,#15803D 10%,var(--panel))}.zh-msg.err{color:#B42318;background:color-mix(in srgb,#B42318 9%,var(--panel))}.zh-msg.warn{color:#9a5b00;background:color-mix(in srgb,#B54708 9%,var(--panel))}
 .em-sec{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px}
@@ -473,7 +474,7 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
   <div class="d-head"><div><h1>Dashboard</h1><div class="status" id="dRange"></div></div>
     <div class="d-exp"><button type="button" class="btn" id="bXlsx">Export Excel</button><button type="button" class="btn ghost" id="bCsv2">CSV</button></div></div>
   <div class="card filters">
-    <div class="f fq"><label for="fQ">Search</label><input id="fQ" type="search" placeholder="LR / placement no., vehicle, party, invoice, P.O.…"></div>
+    <div class="f fq"><label for="fQ">Search</label><input id="fQ" type="search" placeholder="LR / placement no., vehicle, party, vendor, invoice…"></div>
     <div class="f"><label for="fPreset">Date</label><select id="fPreset"><option value="all">All dates</option><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="lastmonth">Last month</option><option value="fy">This financial year</option><option value="lastfy">Last financial year</option><option value="custom">Custom range…</option></select></div>
     <div class="f-custom" id="fCustom" hidden><div class="f"><label for="fFrom">From</label><input id="fFrom" type="date"></div><div class="f"><label for="fTo">To</label><input id="fTo" type="date"></div></div>
     <div class="f"><label for="fBill">Billed To</label><select id="fBill"></select></div>
@@ -482,6 +483,7 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
     <div class="f"><label for="fStatus">Status</label><select id="fStatus"><option value="">All</option><option value="transit">In Transit</option><option value="delivered">Delivered</option></select></div>
     <div class="f"><label for="fFreight">Freight</label><select id="fFreight"><option value="">All</option><option>Pre-Paid</option><option>To Pay</option><option>To Be Billed</option></select></div>
     <div class="f"><label for="fBy">Created by</label><select id="fBy"></select></div>
+    <div class="f"><label for="fPay">Owner payment</label><select id="fPay"><option value="">All</option><option value="due">Balance due</option><option value="ready">Ready to pay balance</option><option value="paid">Fully paid</option><option value="nobill">No Zoho bill</option></select></div>
     <div class="f f-btn"><button type="button" class="btn ghost" id="fReset">Clear filters</button></div>
   </div>
   <div class="reports">
@@ -530,7 +532,7 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
       <div class="f w2"><label for="p_material">Material</label><input id="p_material" placeholder="CRCA pipes"></div>
       <div class="f w2"><label for="p_qty">Approx. quantity</label><input id="p_qty" placeholder="18 MT"></div>
     </div>
-    <div class="pl-sec">Vehicle owner payment <span class="pl-hint">· not shared with parties; used for the Zoho Books bill</span></div>
+    <div class="pl-sec">Vehicle owner payment <span class="pl-hint">· not shared with parties; the Zoho Books bill is created with the first LR</span></div>
     <div class="grid">
       <div class="f w2"><label for="p_owner">Vendor name (as in Zoho Books)</label><input id="p_owner" list="plDlVendor"><datalist id="plDlVendor"></datalist></div>
       <div class="f"><label for="p_ownerMob">Owner Mobile</label><input id="p_ownerMob" type="tel"></div>
@@ -538,9 +540,6 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
       <div class="f"><label for="p_hireType">Hire basis</label><select id="p_hireType"><option>Fixed</option><option>Per MT</option></select></div>
       <div class="f"><label for="p_hireAmt">Hire amount (Rs.), if Fixed</label><input id="p_hireAmt" inputmode="decimal"></div>
       <div class="f"><label for="p_hireRate">Rate per MT (Rs.), if Per MT</label><input id="p_hireRate" inputmode="decimal"></div>
-      <div class="f"><label for="p_advAmt">Advance paid (Rs.)</label><input id="p_advAmt" inputmode="decimal"></div>
-      <div class="f"><label for="p_advMode">Advance paid by</label><select id="p_advMode"><option>Cash</option><option>Bank / UPI</option></select></div>
-      <div class="f"><label for="p_advDate">Advance date</label><input id="p_advDate" type="date"></div>
     </div>
     <div class="pl-sec">Loading at (Consignors) * <span class="pl-hint">· add more if one vehicle loads from several parties</span></div>
     <div id="plCnors" class="drops"></div>
@@ -655,7 +654,7 @@ const f3=v=>{const n=num(v);return n===null?"":n.toFixed(3)};
 const inr=v=>{const n=num(v);return n===null?"":n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})};
 const CONDS=["Tarpaulin Covered","Water Inside","Water Outside","Rusty Condition","White Rust","Coil / Packet Tampered","Edge Damage","Sample Received","Short Received","Other (see remarks)"];
 const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",rem:""});
-const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",hireType:"Fixed",advMode:"Cash",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
+const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",hireType:"Fixed",podRcvd:"No",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
 const SECTIONS=[
  {t:"LR details",kind:1,f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["To Be Billed","Pre-Paid","To Pay"]},{k:"placementNo",l:"Placement No. (from Placements)",ro:1,w:2}]},
@@ -663,9 +662,9 @@ const SECTIONS=[
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
    {k:"lp",l:"Loading Point",w:2,list:"dlPlace"},{k:"dest",l:"Destination",w:2,list:"dlPlace"}]},
- {t:"Vehicle owner payment",hint:"Not printed on the LR. Used for the Zoho Books bill",owner:1,f:[{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor"},{k:"ownerMob",l:"Owner Mobile",type:"tel"},{k:"ownerPan",l:"Owner PAN",up:1},
-   {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"]},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal"},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal"},{k:"advAmt",l:"Advance paid (Rs.)",mode:"decimal"},
-   {k:"advMode",l:"Advance paid by",type:"select",opts:["Cash","Bank / UPI"]},{k:"advDate",l:"Advance date",type:"date"}]},
+ {t:"Vehicle owner payment",hint:"Not printed on the LR. Pay the advance and balance in Zoho Books; the status shows here",owner:1,f:[{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor"},{k:"ownerMob",l:"Owner Mobile",type:"tel"},{k:"ownerPan",l:"Owner PAN",up:1},
+   {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"]},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal"},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal"},
+   {k:"podRcvd",l:"Stamped LR + invoice received",type:"select",opts:["No","Yes"]},{k:"podDate",l:"Received on",type:"date"}]},
  {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"},{k:"cnorEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cnorMob",l:"WhatsApp Mobile",type:"tel"},{k:"cnorLoc",l:"Loading location (paste Google Maps link, optional)",w:4}]},
  {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"},{k:"cneeEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cneeMob",l:"WhatsApp Mobile",type:"tel"},{k:"cneeLoc",l:"Delivery location for driver (paste Google Maps link, optional)",w:4}]},
  {t:"Billed To",billed:1},
@@ -779,27 +778,34 @@ $("form").addEventListener("input",e=>{
     if(t.dataset.party){const p=window._parties?.get(String(v).trim().toLowerCase());if(p&&String(v).trim().length){applyParty(t.dataset.party,p);refreshStatusNote()}}
     if(t.dataset.k==="veh"){const o=(window._vehicles||{})[String(v).replace(/[^A-Za-z0-9]/g,"").toUpperCase()];
       if(o&&!String(cur.owner||"").trim()){[["owner","owner"],["ownerMob","mob"],["ownerPan","pan"]].forEach(([f,k])=>{if(o[k]){cur[f]=o[k];const el=$("i_"+f);if(el)el.value=o[k]}});if(o.hireType){cur.hireType=o.hireType;const el=$("i_hireType");if(el)el.value=o.hireType}}}
-    if(/^(owner|hire|adv)/.test(t.dataset.k)||t.dataset.k==="veh")refreshZoho();
+    if(/^(owner|hire)/.test(t.dataset.k)||t.dataset.k==="veh")refreshZoho();
     if(/^(cnor|cnee)/.test(t.dataset.k)&&cur.billTo!=="Other")syncBill();if(t.dataset.k.endsWith("Email"))refreshStatusNote();
     markDirty();
   }
   if(t.dataset.item!==undefined){cur.items[+t.dataset.item][t.dataset.ik]=t.value;if(cur.hireType==="Per MT")refreshZoho();const T=totals(cur);$("tg").textContent=T.g.toFixed(3);$("tn").textContent=T.n.toFixed(3);$("tr").textContent=T.r.toFixed(3);markDirty()}
 });
-$("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;if(/^(hire|adv)/.test(e.target.dataset.k))refreshZoho();markDirty()}});
+$("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;if(/^(hire|pod)/.test(e.target.dataset.k))refreshZoho();markDirty()}});
+const ZST={draft:"Draft",open:"Unpaid",overdue:"Overdue",partially_paid:"Partly paid",paid:"Paid",void:"Void"};
 function zohoHTML(){
-  const t=hireTotal(cur),adv=parseFloat(String(cur.advAmt||"").replace(/,/g,""))||0,z=cur.zoho||{};
-  let h=`<div class="zh-row"><span>Hire total <b>${rs(t)}</b>${cur.hireType==="Per MT"?` <small>(${totals(cur).n.toFixed(3)} MT x ${rs(cur.hireRate)})</small>`:""}</span>${adv?`<span>Advance <b>${rs(adv)}</b></span><span>Balance <b>${rs(t-adv)}</b></span>`:""}</div>`;
+  const t=hireTotal(cur),z=cur.zoho||{};
+  let h=`<div class="zh-row"><span>Hire total <b>${rs(t)}</b>${cur.hireType==="Per MT"?` <small>(${totals(cur).n.toFixed(3)} MT x ${rs(cur.hireRate)})</small>`:""}</span>`;
+  if(z.billId&&z.total!==undefined)h+=`<span>Paid <b>${rs(z.paid)}</b></span><span>Balance <b>${rs(z.balance)}</b></span><span class="chip sm ${z.billStatus==="paid"?"done":z.paid>0?"req":"transit"}">${esc(ZST[z.billStatus]||z.billStatus||"")}</span>`;
+  if(cur.podRcvd==="Yes")h+=`<span class="chip sm done">Stamped LR received${cur.podDate?" "+esc(fd(cur.podDate)):""}</span>`;
+  h+=`</div>`;
+  if(z.billId&&(z.payments||[]).length)h+=`<div class="zh-pays">${z.payments.map(p=>`<span>${esc(fd(p.date))} · ${rs(p.amount)}${p.mode?" · "+esc(p.mode):""}${p.ref?" · "+esc(p.ref):""}</span>`).join("")}</div>`;
   let msg="",tone="";
-  if(z.billId){msg=`Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> created for ${rs(z.amount)}${z.advPaymentId?`, advance ${rs(z.adv)} recorded`:""}.`;tone="ok"}
+  if(z.billId){msg=`Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> for ${rs(z.total!==undefined?z.total:z.amount)}`+(z.checkedAt?` <small>· checked ${esc((()=>{const d=new Date(String(z.checkedAt).replace(" ","T"));return isNaN(d)?z.checkedAt:d.toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})})())}</small>`:"")+".";tone=z.billStatus==="paid"?"ok":""}
   if(z.status==="error"){msg=(msg?msg+" ":"")+`Zoho Books: ${esc(z.error)}`;tone="err"}
-  if(z.warn){msg+=` ${esc(z.warn)}`;tone=tone||"warn"}
-  if(!msg){if(settings.zoho)msg=!cur.lrNo?"A Zoho Books bill for the vendor will be created when this LR is saved.":(!String(cur.owner||"").trim()||!(t>0))?"Add the vendor name and hire to create the Zoho Books bill.":"No Zoho Books bill yet.";
+  if(!msg){if(settings.zoho)msg=!cur.lrNo?"A Zoho Books bill for the full hire will be created when this LR is saved.":(!String(cur.owner||"").trim()||!(t>0))?"Add the vendor name and hire to create the Zoho Books bill.":"No Zoho Books bill yet.";
     else if(settings.zohoSetup)msg="Zoho Books is switched on in Settings but not connected yet.";}
   const btn=settings.zoho&&isAdmin()&&cur.lrNo&&String(cur.owner||"").trim()&&t>0&&(z.status==="error"||!z.billId||(z.billId&&Number(z.amount)!==t))?`<button type="button" class="btn sm" id="bZoho">${z.billId?"Update Zoho bill":z.status==="error"?"Retry Zoho bill":"Create Zoho bill"}</button>`:"";
-  return h+(msg||btn?`<div class="zh-msg ${tone}">${msg} ${btn}</div>`:"");
+  const ref=settings.zoho&&z.billId?`<button type="button" class="btn ghost sm" id="bZohoRef">Refresh</button>`:"";
+  return h+(msg||btn||ref?`<div class="zh-msg ${tone}">${msg} ${btn}${ref}</div>`:"");
 }
+async function zohoCheck(quiet){if(!settings.zoho||!cur.lrNo||!(cur.zoho&&cur.zoho.billId))return;const no=cur.lrNo;
+  try{const j=await api("zohoStatus",{lrNo:no},45000);if(j.zoho&&cur.lrNo===no){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===no);if(i>=0)all[i].zoho=j.zoho;refreshZoho()}if(!quiet&&j.error)toast("Zoho Books: "+j.error)}catch(e){if(!quiet)toast(e.message)}}
 function refreshZoho(){const w=$("zohoWrap");if(w)w.innerHTML=zohoHTML()}
-$("form").addEventListener("click",async e=>{if(e.target.id!=="bZoho")return;if(!(await ensureSaved()))return;const b=e.target;b.disabled=true;b.textContent="Working…";
+$("form").addEventListener("click",async e=>{if(e.target.id==="bZohoRef"){e.target.disabled=true;e.target.textContent="Checking…";await zohoCheck(false);return}if(e.target.id!=="bZoho")return;if(!(await ensureSaved()))return;const b=e.target;b.disabled=true;b.textContent="Working…";
   try{const j=await api("zohoBill",{lrNo:cur.lrNo},60000);cur.zoho=j.lr.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=cur.zoho;refreshZoho();toast(cur.zoho.status==="ok"?"Zoho Books bill is up to date.":"Zoho Books: "+cur.zoho.error)}
   catch(err){toast(err.message);refreshZoho()}});
 function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||"";$("i_billMob").value=b.mob||""}
@@ -1177,7 +1183,7 @@ async function autoEmail(){
   try{const j=await sendEmail(list,!!settings.cc&&list.length>0,true,wa);toast(`Saved. `+sentMsg(j))}
   catch(e){if(e.code!=="auth")toast(`Saved, but sending failed: ${e.message} Use Send PDF to retry.`)}
 }
-function load(L){cur=JSON.parse(JSON.stringify(L));if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};dirty=false;buildForm();schedule();status();window.scrollTo(0,0)}
+function load(L){cur=JSON.parse(JSON.stringify(L));if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};dirty=false;buildForm();zohoCheck(true);schedule();status();window.scrollTo(0,0)}
 function newLR(from){
   const L=blankLR();
   if(from){const keep=["freight","veh","tveh","driver","driverMob","plant","vendor","ccode","lp","dest","cnorName","cnorAddr","cnorGst","cneeName","cneeAddr","cneeGst","cnorEmail","cneeEmail","billTo","billName","billAddr","billGst","billState","billContact","billPan","inco"];keep.forEach(k=>{if(from[k]!=null)L[k]=from[k]});
@@ -1342,7 +1348,8 @@ function renderReqBadge(){
 function openLR(no){const d=all.find(x=>x.lrNo===no);if(!d)return;if(dirty&&!confirmLeave())return;load(d);setMode("form")}
 
 /* ===================== Dashboard ===================== */
-const DF_DEFAULT={q:"",preset:"30",from:"",to:"",bill:"",cnor:"",cnee:"",status:"",freight:"",by:""};
+const DF_DEFAULT={q:"",preset:"30",from:"",to:"",bill:"",cnor:"",cnee:"",status:"",freight:"",by:"",pay:""};
+const zBal=d=>{const z=d.zoho||{};return z.billId?(z.balance!==undefined?Number(z.balance):Number(z.amount)||0):null};
 let DF=Object.assign({},DF_DEFAULT),dSort={k:"date",dir:-1},dPage=1,dPer=25;const dSel=new Set();
 try{Object.assign(DF,JSON.parse(localStorage.getItem("lrDashF")||"{}"))}catch(e){}
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -1366,12 +1373,13 @@ function dFiltered(){
     if(f&&(d.date||"")<f)return false;if(t&&(d.date||"")>t)return false;
     if(DF.bill&&billOf(d)!==DF.bill)return false;if(DF.cnor&&d.cnorName!==DF.cnor)return false;if(DF.cnee&&d.cneeName!==DF.cnee)return false;
     if(DF.status==="transit"&&d.delivered)return false;if(DF.status==="delivered"&&!d.delivered)return false;
-    if(DF.freight&&d.freight!==DF.freight)return false;if(DF.by&&(d.createdByName||d.createdBy)!==DF.by)return false;
-    if(q&&![d.lrNo,d.clientLrNo,d.placementNo,d.veh,d.cnorName,d.cneeName,billOf(d),d.inv,d.dno,d.po,d.ewb,d.lp,d.dest].join(" ").toLowerCase().includes(q))return false;
+    if(DF.freight&&d.freight!==DF.freight)return false;
+    if(DF.pay){const b=zBal(d);if(DF.pay==="nobill"?b!==null:DF.pay==="paid"?!(b===0):DF.pay==="due"?!(b>0):!(b>0&&d.podRcvd==="Yes"))return false}if(DF.by&&(d.createdByName||d.createdBy)!==DF.by)return false;
+    if(q&&![d.lrNo,d.clientLrNo,d.owner,d.placementNo,d.veh,d.cnorName,d.cneeName,billOf(d),d.inv,d.dno,d.po,d.ewb,d.lp,d.dest].join(" ").toLowerCase().includes(q))return false;
     return true;
   });
 }
-const SORTERS={lrNo:d=>d.lrNo||"",date:d=>(d.date||"")+(d.lrNo||""),veh:d=>d.veh||"",cnor:d=>d.cnorName||"",cnee:d=>d.cneeName||"",bill:d=>billOf(d),inv:d=>d.inv||"",val:d=>num(d.invVal)||0,net:d=>netOf(d),status:d=>d.delivered?1:0,by:d=>d.createdByName||d.createdBy||""};
+const SORTERS={lrNo:d=>d.lrNo||"",date:d=>(d.date||"")+(d.lrNo||""),veh:d=>d.veh||"",cnor:d=>d.cnorName||"",cnee:d=>d.cneeName||"",bill:d=>billOf(d),inv:d=>d.inv||"",val:d=>num(d.invVal)||0,net:d=>netOf(d),status:d=>d.delivered?1:0,pay:d=>{const b=zBal(d);return b===null?-1:b},by:d=>d.createdByName||d.createdBy||""};
 function dSorted(list){const g=SORTERS[dSort.k]||SORTERS.date;return list.slice().sort((a,b)=>{const x=g(a),y=g(b);return(x<y?-1:x>y?1:0)*dSort.dir})}
 function fillSelect(id,values,cur,allLabel){const el=$(id);const v=[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   el.innerHTML=`<option value="">${allLabel}</option>`+v.map(x=>`<option${x===cur?" selected":""}>${esc(x)}</option>`).join("");if(cur&&!v.includes(cur))el.value=""}
@@ -1379,13 +1387,13 @@ function renderDash(){
   if(document.body.dataset.mode!=="dash")return;
   fillSelect("fBill",all.map(billOf),DF.bill,"All billed parties");fillSelect("fCnor",all.map(d=>d.cnorName),DF.cnor,"All consignors");
   fillSelect("fCnee",all.map(d=>d.cneeName),DF.cnee,"All consignees");fillSelect("fBy",all.map(d=>d.createdByName||d.createdBy),DF.by,"Anyone");
-  $("fQ").value=DF.q;$("fPreset").value=DF.preset;$("fStatus").value=DF.status;$("fFreight").value=DF.freight;$("fFrom").value=DF.from;$("fTo").value=DF.to;
+  $("fQ").value=DF.q;$("fPreset").value=DF.preset;$("fStatus").value=DF.status;$("fFreight").value=DF.freight;$("fPay").value=DF.pay||"";$("fFrom").value=DF.from;$("fTo").value=DF.to;
   $("fCustom").hidden=DF.preset!=="custom";
   renderResults();
 }
 function saveDF(){try{localStorage.setItem("lrDashF",JSON.stringify(DF))}catch(e){}}
-["fQ","fPreset","fBill","fCnor","fCnee","fStatus","fFreight","fBy","fFrom","fTo"].forEach(id=>{
-  const key={fQ:"q",fPreset:"preset",fBill:"bill",fCnor:"cnor",fCnee:"cnee",fStatus:"status",fFreight:"freight",fBy:"by",fFrom:"from",fTo:"to"}[id];
+["fQ","fPreset","fBill","fCnor","fCnee","fStatus","fFreight","fBy","fPay","fFrom","fTo"].forEach(id=>{
+  const key={fQ:"q",fPreset:"preset",fBill:"bill",fCnor:"cnor",fCnee:"cnee",fStatus:"status",fFreight:"freight",fBy:"by",fPay:"pay",fFrom:"from",fTo:"to"}[id];
   $(id).addEventListener(id==="fQ"?"input":"change",()=>{DF[key]=$(id).value;dPage=1;saveDF();$("fCustom").hidden=DF.preset!=="custom";renderResults()});
 });
 $("fReset").onclick=()=>{DF=Object.assign({},DF_DEFAULT,{preset:"all"});dPage=1;saveDF();renderDash()};
@@ -1400,12 +1408,14 @@ function renderResults(){
   const th=(k,l,cls)=>`<th class="${cls||""}${k?" sortable":""}"${k?` data-sort="${k}" aria-sort="${dSort.k===k?(dSort.dir>0?"ascending":"descending"):"none"}"`:""}>${l}${k&&dSort.k===k?(dSort.dir>0?" ▲":" ▼"):""}</th>`;
   const allOnPage=rows.length&&rows.every(d=>dSel.has(d.lrNo));
   $("dTable").innerHTML=list.length?`<table class="dt"><thead><tr><th class="ck"><input type="checkbox" id="ckAll" aria-label="Select all on this page"${allOnPage?" checked":""}></th>
-    ${th("lrNo","LR No.")}${th("date","Date")}${th("veh","Vehicle")}${th("cnor","Consignor")}${th("cnee","Consignee")}${th("bill","Billed To")}${th("inv","Invoice")}${th("val","Inv. Value","r")}${th("net","Net Wt (MT)","r")}${th("status","Status")}${th("by","Created By")}<th class="act">Actions</th></tr></thead>
+    ${th("lrNo","LR No.")}${th("date","Date")}${th("veh","Vehicle")}${th("cnor","Consignor")}${th("cnee","Consignee")}${th("bill","Billed To")}${th("inv","Invoice")}${th("val","Inv. Value","r")}${th("net","Net Wt (MT)","r")}${th("status","Status")}${th("pay","Owner payment","r")}${th("by","Created By")}<th class="act">Actions</th></tr></thead>
     <tbody>${rows.map(d=>`<tr${dSel.has(d.lrNo)?' class="sel"':""}><td class="ck"><input type="checkbox" data-ck="${esc(d.lrNo)}" aria-label="Select ${esc(d.lrNo)}"${dSel.has(d.lrNo)?" checked":""}></td>
       <td class="mono"><button type="button" class="lnk" data-open="${esc(d.lrNo)}">${esc(d.lrNo)}</button>${isClient(d)?`<div class="sub">Client LR ${esc(d.clientLrNo||"")}</div>`:""}${requests.some(r=>r.lrNo===d.lrNo&&r.status==="Pending")?' <span class="chip req sm" title="Pending request">Request</span>':""}</td>
       <td class="nw">${fd(d.date)}</td><td class="mono nw">${esc(d.veh)}</td><td>${esc(d.cnorName)}</td><td>${esc(d.cneeName)}</td><td>${esc(billOf(d))}</td><td class="nw">${esc(d.inv)}</td>
       <td class="r nw">${d.invVal?inr(d.invVal):""}</td><td class="r mono">${netOf(d)?netOf(d).toFixed(3):""}</td>
       <td>${d.delivered?`<span class="chip done sm">Delivered${d.deliveredOn?" "+fd(d.deliveredOn).slice(0,6):""}</span>`:`<span class="chip transit sm">In Transit</span>`}</td>
+      <td class="r nw">${(()=>{const z=d.zoho||{},b=zBal(d);if(b===null)return d.owner?`<span class="sub">${z.status==="error"?"Zoho error":"No bill"}</span>`:"";
+        return (b===0?`<span class="chip done sm">Paid</span>`:`<b>${rs(b)}</b><div class="sub">${z.paid>0?"balance":"unpaid"}${d.podRcvd==="Yes"?" · stamped LR in":""}</div>`)})()}</td>
       <td class="nw">${esc(d.createdByName||d.createdBy||"")}</td>
       <td class="act nw"><button type="button" class="btn sm" data-open="${esc(d.lrNo)}">Open</button>${isClient(d)?"":`<button type="button" class="btn sm" data-pdf="${esc(d.lrNo)}">PDF</button>`}${d.delivered?"":`<button type="button" class="btn sm" data-dlv="${esc(d.lrNo)}">Delivered</button>`}</td></tr>`).join("")}</tbody></table>`
     :`<div class="empty">No LRs match these filters.<br><button type="button" class="btn" id="fReset2">Clear filters</button></div>`;
@@ -1457,7 +1467,7 @@ function exportRows(list){
   return list.map(d=>{const T=totals(d),b=bill(d);return{"LR No":d.lrNo,"Client LR No":d.clientLrNo||"","Placement No":d.placementNo||"","LR Date":fd(d.date),"Status":d.delivered?"Delivered":"In Transit","Delivered On":fd(d.deliveredOn||""),"Freight":d.freight||"",
     "Vehicle No":d.veh||"","Driver":d.driver||"","Consignor":d.cnorName||"","Consignee":d.cneeName||"","Billed To":d.billTo||"","Billed Party":b.name||"","Billed GSTIN":b.gst||"",
     "Invoice No":d.inv||"","Invoice Date":fd(d.invDate||""),"Invoice Value":num(d.invVal)||"","P.O. No":d.po||"","E-Way Bill":d.ewb||"","Delivery No":d.dno||"","Loading Point":d.lp||"","Destination":d.dest||"",
-    "Gross Wt (MT)":+T.g.toFixed(3),"Net Wt (MT)":+T.n.toFixed(3),"Rcvd Gross Wt (MT)":+T.r.toFixed(3),"Created By":d.createdByName||d.createdBy||"","Last Emailed":((d.emailLog||[]).slice(-1)[0]||{}).at||""}});
+    "Gross Wt (MT)":+T.g.toFixed(3),"Net Wt (MT)":+T.n.toFixed(3),"Rcvd Gross Wt (MT)":+T.r.toFixed(3),"Vendor":d.owner||"","Hire":hireTotal(d)||"","Zoho Bill":(d.zoho||{}).billNo||"","Paid to Owner":(d.zoho||{}).paid??"","Balance to Owner":zBal(d)??"","Stamped LR Received":d.podRcvd==="Yes"?fd(d.podDate||"")||"Yes":"","Created By":d.createdByName||d.createdBy||"","Last Emailed":((d.emailLog||[]).slice(-1)[0]||{}).at||""}});
 }
 async function exportXlsx(list,label){
   if(!list.length){toast("Nothing to export.");return}
@@ -1533,7 +1543,7 @@ $("reqs").addEventListener("click",async e=>{
 });
 /* ===================== Vehicle placements ===================== */
 let placements=[],plcFilter="open",plcEdit=null;
-const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","owner","ownerMob","ownerPan","hireType","hireAmt","hireRate","advAmt","advMode","advDate","billName","billEmail","billMob","remarks"];
+const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","owner","ownerMob","ownerPan","hireType","hireAmt","hireRate","billName","billEmail","billMob","remarks"];
 function plcDrops(p){return p.consignees&&p.consignees.length?p.consignees:(p.cneeName||p.dest?[{name:p.cneeName,addr:p.cneeAddr,gst:p.cneeGst,email:p.cneeEmail,dest:p.dest,lrNo:p.lrNo||""}]:[])}
 function plcCnors(p){return p.consignors&&p.consignors.length?p.consignors:(p.cnorName?[{name:p.cnorName,addr:p.cnorAddr,gst:p.cnorGst,email:p.cnorEmail,mob:p.cnorMob,loc:p.cnorLoc,lp:p.lp}]:[])}
 function plcFrom(p,d){const c=plcCnors(p);return c[Math.min(+(d&&d.from)||0,Math.max(0,c.length-1))]||{}}
@@ -1645,8 +1655,8 @@ function issueLR(no,idx){
   const L=blankLR();
   Object.assign(L,{veh:p.veh,driver:p.driver,driverMob:p.driverMob,lp:c.lp||"",dest:d.dest||"",
     cnorName:c.name||"",cnorAddr:c.addr||"",cnorGst:c.gst||"",cnorEmail:c.email||"",cnorMob:c.mob||"",cnorLoc:c.loc||"",cneeLoc:d.loc||"",cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",cneeMob:d.mob||"",
-    billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0,owner:p.owner||"",ownerMob:p.ownerMob||"",ownerPan:p.ownerPan||"",hireType:p.hireType||"Fixed",advMode:p.advMode||"Cash"});
-  if(!plcDrops(p).some(x=>x.lrNo))Object.assign(L,{hireAmt:p.hireAmt||"",hireRate:p.hireRate||"",advAmt:p.advAmt||"",advDate:p.advDate||""});   // one vehicle, one bill: hire goes on the first LR
+    billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0,owner:p.owner||"",ownerMob:p.ownerMob||"",ownerPan:p.ownerPan||"",hireType:p.hireType||"Fixed"});
+  if(!plcDrops(p).some(x=>x.lrNo))Object.assign(L,{hireAmt:p.hireAmt||"",hireRate:p.hireRate||""});   // one vehicle, one bill: hire goes on the first LR
   {const key=String(c.name||"").trim().toLowerCase(),last=all.filter(x=>String(x.cnorName||"").trim().toLowerCase()===key).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];if(last&&last.kind==="client")L.kind="client"}
   if(p.material)L.items=[Object.assign(blankItem(),{desc:p.material})];
   load(L);dirty=true;status();setMode("form");
