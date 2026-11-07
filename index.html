@@ -289,6 +289,10 @@ body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
 .trip-card dt{color:#5a6b85}.trip-card dd{margin:0;font-weight:600}
 .trip-card p{color:#5a6b85;font-size:14px}
 .dt .sub{font-size:11.5px;color:var(--muted);font-family:var(--body,system-ui)}
+.zoho-box{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.zh-row{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}.zh-row small{color:var(--muted)}
+.zh-msg{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--field)}
+.zh-msg.ok{color:#15803D;background:color-mix(in srgb,#15803D 10%,var(--panel))}.zh-msg.err{color:#B42318;background:color-mix(in srgb,#B42318 9%,var(--panel))}.zh-msg.warn{color:#9a5b00;background:color-mix(in srgb,#B54708 9%,var(--panel))}
 .em-sec{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:10px 0 2px}
 #waSec{display:flex;flex-direction:column;gap:12px}
 .em-sec.wa{color:#128C4A;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
@@ -526,6 +530,18 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
       <div class="f w2"><label for="p_material">Material</label><input id="p_material" placeholder="CRCA pipes"></div>
       <div class="f w2"><label for="p_qty">Approx. quantity</label><input id="p_qty" placeholder="18 MT"></div>
     </div>
+    <div class="pl-sec">Vehicle owner payment <span class="pl-hint">· not shared with parties; used for the Zoho Books bill</span></div>
+    <div class="grid">
+      <div class="f w2"><label for="p_owner">Vendor name (as in Zoho Books)</label><input id="p_owner" list="plDlVendor"><datalist id="plDlVendor"></datalist></div>
+      <div class="f"><label for="p_ownerMob">Owner Mobile</label><input id="p_ownerMob" type="tel"></div>
+      <div class="f"><label for="p_ownerPan">Owner PAN</label><input id="p_ownerPan"></div>
+      <div class="f"><label for="p_hireType">Hire basis</label><select id="p_hireType"><option>Fixed</option><option>Per MT</option></select></div>
+      <div class="f"><label for="p_hireAmt">Hire amount (Rs.), if Fixed</label><input id="p_hireAmt" inputmode="decimal"></div>
+      <div class="f"><label for="p_hireRate">Rate per MT (Rs.), if Per MT</label><input id="p_hireRate" inputmode="decimal"></div>
+      <div class="f"><label for="p_advAmt">Advance paid (Rs.)</label><input id="p_advAmt" inputmode="decimal"></div>
+      <div class="f"><label for="p_advMode">Advance paid by</label><select id="p_advMode"><option>Cash</option><option>Bank / UPI</option></select></div>
+      <div class="f"><label for="p_advDate">Advance date</label><input id="p_advDate" type="date"></div>
+    </div>
     <div class="pl-sec">Loading at (Consignors) * <span class="pl-hint">· add more if one vehicle loads from several parties</span></div>
     <div id="plCnors" class="drops"></div>
     <button type="button" class="btn ghost" id="bAddCnor">+ Add another consignor</button>
@@ -639,7 +655,7 @@ const f3=v=>{const n=num(v);return n===null?"":n.toFixed(3)};
 const inr=v=>{const n=num(v);return n===null?"":n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})};
 const CONDS=["Tarpaulin Covered","Water Inside","Water Outside","Rusty Condition","White Rust","Coil / Packet Tampered","Edge Damage","Sample Received","Short Received","Other (see remarks)"];
 const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",rem:""});
-const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
+const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",hireType:"Fixed",advMode:"Cash",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
 const SECTIONS=[
  {t:"LR details",kind:1,f:[{k:"date",l:"LR Date",type:"date"},{k:"freight",l:"Freight",type:"select",opts:["To Be Billed","Pre-Paid","To Pay"]},{k:"placementNo",l:"Placement No. (from Placements)",ro:1,w:2}]},
@@ -647,6 +663,9 @@ const SECTIONS=[
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
    {k:"lp",l:"Loading Point",w:2,list:"dlPlace"},{k:"dest",l:"Destination",w:2,list:"dlPlace"}]},
+ {t:"Vehicle owner payment",hint:"Not printed on the LR. Used for the Zoho Books bill",owner:1,f:[{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor"},{k:"ownerMob",l:"Owner Mobile",type:"tel"},{k:"ownerPan",l:"Owner PAN",up:1},
+   {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"]},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal"},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal"},{k:"advAmt",l:"Advance paid (Rs.)",mode:"decimal"},
+   {k:"advMode",l:"Advance paid by",type:"select",opts:["Cash","Bank / UPI"]},{k:"advDate",l:"Advance date",type:"date"}]},
  {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"},{k:"cnorEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cnorMob",l:"WhatsApp Mobile",type:"tel"},{k:"cnorLoc",l:"Loading location (paste Google Maps link, optional)",w:4}]},
  {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"},{k:"cneeEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cneeMob",l:"WhatsApp Mobile",type:"tel"},{k:"cneeLoc",l:"Delivery location for driver (paste Google Maps link, optional)",w:4}]},
  {t:"Billed To",billed:1},
@@ -676,6 +695,8 @@ function shownNext(){
   return c||"Loading…";
 }
 const isClient=L=>L&&L.kind==="client";
+const hireTotal=L=>{const n=x=>parseFloat(String(x==null?"":x).replace(/,/g,""))||0;return Math.round((L.hireType==="Per MT"?n(L.hireRate)*totals(L).n:n(L.hireAmt))*100)/100};
+const rs=v=>"Rs. "+(Number(v)||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 function nextNo(){
   const cl=isClient(cur),p=cl?(settings.tripPrefix||"ATT"):(settings.prefix||"ALF");let max=cl?0:(parseInt(settings.start)||1)-1;
   all.forEach(d=>{if(d.lrNo&&d.lrNo.startsWith(p)){const k=parseInt(d.lrNo.slice(p.length));if(!isNaN(k)&&k>max)max=k}});
@@ -700,6 +721,7 @@ function buildForm(){
       if(cl)h+=`<div class="grid" style="margin-bottom:12px">${fieldHTML({k:"clientLrNo",l:"Client's LR No. *",w:2,up:1})}${fieldHTML({k:"clientLrDate",l:"Client's LR Date",type:"date"})}</div><p class="kind-note">The company issues the LR. LR Desk keeps this trip under its own trip number, sends the driver the delivery details on WhatsApp, tracks delivery and sends the delivered notice. No LR is printed from here.</p>`;}
     if(s.f)h+=`<div class="grid">${s.f.map(x=>fieldHTML(isClient(cur)&&x.k==="date"?Object.assign({},x,{l:"Loading Date"}):x)).join("")}</div>`;
     if(s.status){h+=`<div id="statWrap">${statusHTML()}</div>`}
+    if(s.owner)h+=`<div id="zohoWrap" class="zoho-box">${zohoHTML()}</div>`;
     if(s.billed){
       const b=bill(cur),auto=cur.billTo!=="Other";
       h+=`<div class="seg" role="group" aria-label="Bill to">${["Consignor","Consignee","Other"].map(o=>`<button type="button" data-bill="${o}" aria-pressed="${cur.billTo===o}">${o}</button>`).join("")}</div>
@@ -725,7 +747,7 @@ function buildForm(){
     }
     h+=`</section>`;
   });
-  h+=`<datalist id="dlParty"></datalist><datalist id="dlVeh"></datalist><datalist id="dlPlace"></datalist>`;
+  h+=`<datalist id="dlParty"></datalist><datalist id="dlVendor"></datalist><datalist id="dlVeh"></datalist><datalist id="dlPlace"></datalist>`;
   F.innerHTML=h;fillLists();
 }
 let sharedParties=[];
@@ -755,12 +777,31 @@ $("form").addEventListener("input",e=>{
   if(t.dataset.k){let v=t.value;if(t.dataset.up){v=v.toUpperCase();if(t.value!==v){const p=t.selectionStart;t.value=v;try{t.setSelectionRange(p,p)}catch(_){}}}
     cur[t.dataset.k]=v;
     if(t.dataset.party){const p=window._parties?.get(String(v).trim().toLowerCase());if(p&&String(v).trim().length){applyParty(t.dataset.party,p);refreshStatusNote()}}
+    if(t.dataset.k==="veh"){const o=(window._vehicles||{})[String(v).replace(/[^A-Za-z0-9]/g,"").toUpperCase()];
+      if(o&&!String(cur.owner||"").trim()){[["owner","owner"],["ownerMob","mob"],["ownerPan","pan"]].forEach(([f,k])=>{if(o[k]){cur[f]=o[k];const el=$("i_"+f);if(el)el.value=o[k]}});if(o.hireType){cur.hireType=o.hireType;const el=$("i_hireType");if(el)el.value=o.hireType}}}
+    if(/^(owner|hire|adv)/.test(t.dataset.k)||t.dataset.k==="veh")refreshZoho();
     if(/^(cnor|cnee)/.test(t.dataset.k)&&cur.billTo!=="Other")syncBill();if(t.dataset.k.endsWith("Email"))refreshStatusNote();
     markDirty();
   }
-  if(t.dataset.item!==undefined){cur.items[+t.dataset.item][t.dataset.ik]=t.value;const T=totals(cur);$("tg").textContent=T.g.toFixed(3);$("tn").textContent=T.n.toFixed(3);$("tr").textContent=T.r.toFixed(3);markDirty()}
+  if(t.dataset.item!==undefined){cur.items[+t.dataset.item][t.dataset.ik]=t.value;if(cur.hireType==="Per MT")refreshZoho();const T=totals(cur);$("tg").textContent=T.g.toFixed(3);$("tn").textContent=T.n.toFixed(3);$("tr").textContent=T.r.toFixed(3);markDirty()}
 });
-$("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;markDirty()}});
+$("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;if(/^(hire|adv)/.test(e.target.dataset.k))refreshZoho();markDirty()}});
+function zohoHTML(){
+  const t=hireTotal(cur),adv=parseFloat(String(cur.advAmt||"").replace(/,/g,""))||0,z=cur.zoho||{};
+  let h=`<div class="zh-row"><span>Hire total <b>${rs(t)}</b>${cur.hireType==="Per MT"?` <small>(${totals(cur).n.toFixed(3)} MT x ${rs(cur.hireRate)})</small>`:""}</span>${adv?`<span>Advance <b>${rs(adv)}</b></span><span>Balance <b>${rs(t-adv)}</b></span>`:""}</div>`;
+  let msg="",tone="";
+  if(z.billId){msg=`Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> created for ${rs(z.amount)}${z.advPaymentId?`, advance ${rs(z.adv)} recorded`:""}.`;tone="ok"}
+  if(z.status==="error"){msg=(msg?msg+" ":"")+`Zoho Books: ${esc(z.error)}`;tone="err"}
+  if(z.warn){msg+=` ${esc(z.warn)}`;tone=tone||"warn"}
+  if(!msg){if(settings.zoho)msg=!cur.lrNo?"A Zoho Books bill for the vendor will be created when this LR is saved.":(!String(cur.owner||"").trim()||!(t>0))?"Add the vendor name and hire to create the Zoho Books bill.":"No Zoho Books bill yet.";
+    else if(settings.zohoSetup)msg="Zoho Books is switched on in Settings but not connected yet.";}
+  const btn=settings.zoho&&isAdmin()&&cur.lrNo&&String(cur.owner||"").trim()&&t>0&&(z.status==="error"||!z.billId||(z.billId&&Number(z.amount)!==t))?`<button type="button" class="btn sm" id="bZoho">${z.billId?"Update Zoho bill":z.status==="error"?"Retry Zoho bill":"Create Zoho bill"}</button>`:"";
+  return h+(msg||btn?`<div class="zh-msg ${tone}">${msg} ${btn}</div>`:"");
+}
+function refreshZoho(){const w=$("zohoWrap");if(w)w.innerHTML=zohoHTML()}
+$("form").addEventListener("click",async e=>{if(e.target.id!=="bZoho")return;if(!(await ensureSaved()))return;const b=e.target;b.disabled=true;b.textContent="Working…";
+  try{const j=await api("zohoBill",{lrNo:cur.lrNo},60000);cur.zoho=j.lr.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=cur.zoho;refreshZoho();toast(cur.zoho.status==="ok"?"Zoho Books bill is up to date.":"Zoho Books: "+cur.zoho.error)}
+  catch(err){toast(err.message);refreshZoho()}});
 function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||"";$("i_billMob").value=b.mob||""}
 $("form").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
@@ -988,12 +1029,18 @@ $("bChange").onclick=()=>{$("sentTo").textContent="";lockMsg("");showStep("email
 $("bHave").onclick=()=>{const em=$("emailIn").value.trim().toLowerCase();if(!validEmail(em)){lockMsg("Enter your email first, then tap this again.","err");$("emailIn").focus();return}goToCode(em);lockMsg("Enter the code from your latest email. Codes work for 10 minutes.","info")};
 $("codeIn").addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,"").slice(0,6);if(e.target.value!==v)e.target.value=v;if(v.length===6)verifyCode()});
 try{const em=localStorage.getItem("lrEmail");if(em)$("emailIn").value=em}catch(e){}
+function rememberVehicle(x){const k=String(x.veh||"").replace(/[^A-Za-z0-9]/g,"").toUpperCase();if(!k||!String(x.owner||"").trim())return;
+  window._vehicles=window._vehicles||{};const o=window._vehicles[k]||{};window._vehicles[k]={veh:x.veh,owner:x.owner,mob:x.ownerMob||o.mob||"",pan:x.ownerPan||o.pan||"",hireType:x.hireType||o.hireType||""};fillVendors()}
+function fillVendors(){const names=new Set([...(window._zohoVendors||[]),...Object.values(window._vehicles||{}).map(v=>v.owner)].filter(Boolean));
+  const opts=[...names].sort((a,b)=>a.localeCompare(b)).map(n=>`<option value="${esc(n)}">`).join("");["dlVendor","plDlVendor"].forEach(id=>{const d=$(id);if(d)d.innerHTML=opts})}
 async function refresh(first){
   try{
     const j=await api("list");
     all=(j.lrs||[]).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     if(j.settings)settings=j.settings;
     if(Array.isArray(j.parties))sharedParties=j.parties;
+    if(Array.isArray(j.vehicles)){window._vehicles={};j.vehicles.forEach(v=>{window._vehicles[String(v.veh).replace(/[^A-Za-z0-9]/g,"").toUpperCase()]=v})}
+    fillVendors();if(settings.zoho&&!window._zohoVendors){window._zohoVendors=[];api("zohoVendors",{},45000).then(r=>{window._zohoVendors=r.vendors||[];fillVendors()}).catch(()=>{window._zohoVendors=null})}
     if(Array.isArray(j.requests))requests=j.requests;
     if(Array.isArray(j.placements))placements=j.placements;
     listLoaded=true;
@@ -1016,8 +1063,8 @@ async function save(){
     cur=j.lr;if(!cur.items||!cur.items.length)cur.items=[blankItem()];cur.cond=cur.cond||{};
     const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i]=JSON.parse(JSON.stringify(cur));else all.unshift(JSON.parse(JSON.stringify(cur)));
     if(cur.placementNo){const pl=placements.find(x=>x.no===cur.placementNo);if(pl){const ds=plcDrops(pl);if(!pl.consignees||!pl.consignees.length)pl.consignees=ds;const k=+(cur.placementDrop||0);if(pl.consignees[k]&&!pl.consignees[k].lrNo)pl.consignees[k].lrNo=cur.lrNo;const n=pl.consignees.filter(x=>x.lrNo).length;pl.status=!pl.consignees.length?"LR Issued":n<pl.consignees.length?"Partly Issued":"LR Issued"}}
-    dirty=false;try{localStorage.removeItem("lrDraft")}catch(e){}
-    fillLists();renderList();{const bs=$("bannerSlot");if(bs)bs.innerHTML=formBanner()}status();schedule();renderStatus();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`);if(isNew){if(isClient(cur))rebuild();setTimeout(autoEmail,400)}return true;
+    rememberVehicle(cur);dirty=false;try{localStorage.removeItem("lrDraft")}catch(e){}
+    fillLists();renderList();{const bs=$("bannerSlot");if(bs)bs.innerHTML=formBanner()}status();schedule();renderStatus();refreshZoho();toast(isNew?`Saved as ${cur.lrNo}`:`${cur.lrNo} updated`+(cur.zoho&&cur.zoho.status==="error"?". Zoho bill failed: "+cur.zoho.error:""));if(cur.zoho&&cur.zoho.status==="error"&&isNew)setTimeout(()=>toast("Saved as "+cur.lrNo+". Zoho bill failed: "+cur.zoho.error),2500);if(isNew){if(isClient(cur))rebuild();setTimeout(autoEmail,400)}return true;
   }catch(e){if(e.code!=="auth")toast(e.message);return false}
   finally{busy(false)}
 }
@@ -1486,7 +1533,7 @@ $("reqs").addEventListener("click",async e=>{
 });
 /* ===================== Vehicle placements ===================== */
 let placements=[],plcFilter="open",plcEdit=null;
-const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","billName","billEmail","billMob","remarks"];
+const PLC_FIELDS=["placedOn","veh","vehType","capacity","driver","driverMob","loadDate","loadTime","material","qty","owner","ownerMob","ownerPan","hireType","hireAmt","hireRate","advAmt","advMode","advDate","billName","billEmail","billMob","remarks"];
 function plcDrops(p){return p.consignees&&p.consignees.length?p.consignees:(p.cneeName||p.dest?[{name:p.cneeName,addr:p.cneeAddr,gst:p.cneeGst,email:p.cneeEmail,dest:p.dest,lrNo:p.lrNo||""}]:[])}
 function plcCnors(p){return p.consignors&&p.consignors.length?p.consignors:(p.cnorName?[{name:p.cnorName,addr:p.cnorAddr,gst:p.cnorGst,email:p.cnorEmail,mob:p.cnorMob,loc:p.cnorLoc,lp:p.lp}]:[])}
 function plcFrom(p,d){const c=plcCnors(p);return c[Math.min(+(d&&d.from)||0,Math.max(0,c.length-1))]||{}}
@@ -1566,6 +1613,8 @@ function openPlc(no){
 }
 $("plcBox").addEventListener("input",e=>{
   const t=e.target;
+  if(t.id==="p_veh"){const o=(window._vehicles||{})[t.value.replace(/[^A-Za-z0-9]/g,"").toUpperCase()];
+    if(o&&!$("p_owner").value.trim()){$("p_owner").value=o.owner||"";$("p_ownerMob").value=o.mob||"";$("p_ownerPan").value=o.pan||"";if(o.hireType)$("p_hireType").value=o.hireType}}
   if(t.id==="p_veh"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
   if(t.id==="p_billName"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){if(party.email)$("p_billEmail").value=party.email;if(party.mob)$("p_billMob").value=party.mob}}
   plcNote();
@@ -1585,7 +1634,7 @@ $("plSave").onclick=async()=>{
     const j=await api("savePlacement",{p},60000);
     const i=placements.findIndex(x=>x.no===j.p.no);if(i>=0)placements[i]=j.p;else placements.unshift(j.p);
     $("plcBox").hidden=true;plcFilter="open";renderPlc();
-    toast(`${j.p.no} saved${j.emailedTo?". Email sent to "+j.emailedTo:j.emailNote?". "+j.emailNote:""}${j.waNote?". "+j.waNote:""}`);
+    rememberVehicle(j.p);toast(`${j.p.no} saved${j.emailedTo?". Email sent to "+j.emailedTo:j.emailNote?". "+j.emailNote:""}${j.waNote?". "+j.waNote:""}`);
   }catch(e){$("plErr").textContent=e.message}
   finally{b.disabled=false;b.textContent=plcEdit?"Save changes":"Place vehicle"}
 };
@@ -1596,7 +1645,8 @@ function issueLR(no,idx){
   const L=blankLR();
   Object.assign(L,{veh:p.veh,driver:p.driver,driverMob:p.driverMob,lp:c.lp||"",dest:d.dest||"",
     cnorName:c.name||"",cnorAddr:c.addr||"",cnorGst:c.gst||"",cnorEmail:c.email||"",cnorMob:c.mob||"",cnorLoc:c.loc||"",cneeLoc:d.loc||"",cneeName:d.name||"",cneeAddr:d.addr||"",cneeGst:d.gst||"",cneeEmail:d.email||"",cneeMob:d.mob||"",
-    billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0});
+    billTo:p.billTo||"Consignee",billName:p.billName,billEmail:p.billEmail,billMob:p.billMob||"",placementNo:p.no,placementDrop:idx||0,owner:p.owner||"",ownerMob:p.ownerMob||"",ownerPan:p.ownerPan||"",hireType:p.hireType||"Fixed",advMode:p.advMode||"Cash"});
+  if(!plcDrops(p).some(x=>x.lrNo))Object.assign(L,{hireAmt:p.hireAmt||"",hireRate:p.hireRate||"",advAmt:p.advAmt||"",advDate:p.advDate||""});   // one vehicle, one bill: hire goes on the first LR
   {const key=String(c.name||"").trim().toLowerCase(),last=all.filter(x=>String(x.cnorName||"").trim().toLowerCase()===key).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];if(last&&last.kind==="client")L.kind="client"}
   if(p.material)L.items=[Object.assign(blankItem(),{desc:p.material})];
   load(L);dirty=true;status();setMode("form");
