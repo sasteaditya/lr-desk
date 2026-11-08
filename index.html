@@ -292,6 +292,13 @@ body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
 .zoho-box{margin-top:12px;display:flex;flex-direction:column;gap:8px}
 .zh-row{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}.zh-row small{color:var(--muted)}
 .own-veh .mkt{display:none!important}
+.pays{display:none;max-width:1200px;margin:0 auto;padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex-direction:column;gap:14px}
+body[data-mode="pay"] .pays{display:flex}
+body[data-mode="pay"] .main,body[data-mode="pay"] .tabs{display:none!important}
+.pays .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.pay-t{min-width:980px}.pay-t tbody tr{cursor:pointer}.pay-t tbody tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+#payTabs{flex-wrap:wrap}
+.wa-q{color:var(--warn,#b45309);font-weight:600}
 .wa-ok{color:var(--ok,#1a7f37);font-weight:600}
 .zh-pays{display:flex;flex-wrap:wrap;gap:6px}.zh-pays span{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink)}
 .zh-msg{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--field)}
@@ -444,6 +451,7 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
     <nav class="nav" aria-label="Sections">
       <button type="button" id="vPlc" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM6.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm11 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg><span>Placements</span><em class="pill-n" id="plOpenN"></em></button>
       <button type="button" id="vForm" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg><span>LR Form</span></button>
+      <button type="button" id="vPay" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 10h18M7 15h4"/></svg><span>Payments</span><em class="pill-n red" id="payBadge" hidden></em></button>
       <button type="button" id="vDash" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Dashboard</span></button>
       <button type="button" id="vReq" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4zM8 9h8M8 12h5"/></svg><span>Requests</span><em class="pill-n red" id="reqBadge" hidden>0</em></button>
       <button type="button" id="vInbox" class="admin-only" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M9 10h6M9 13.5h4"/></svg><span>WhatsApp</span><em class="pill-n red" id="waBadge" hidden>0</em></button>
@@ -503,6 +511,13 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
     <input id="plQ" type="search" placeholder="Search placement no., vehicle, party, driver…" aria-label="Search placements"></div>
   <div class="pl-list" id="plList"></div>
 </section>
+<section class="pays" id="pays">
+  <div class="d-head"><div><h1>Owner payments</h1><div class="status">After the LR is issued: vehicle owner, hire, Zoho Books bill, advance and balance. Pay in Zoho Books; the status shows here.</div></div></div>
+  <div class="kpis" id="payKpis"></div>
+  <div class="pl-bar"><div class="seg" id="payTabs" role="group" aria-label="Filter payments"></div>
+    <input id="payQ" type="search" placeholder="Search LR, vehicle, vendor, party…" aria-label="Search payments"></div>
+  <div class="card tablecard"><div class="tablewrap" id="payList"></div></div>
+</section>
 <section class="inbox" id="inbox">
   <div class="wa-wrap">
     <aside class="wa-side"><div class="wa-sh"><h1>WhatsApp</h1><button type="button" class="btn ghost sm" id="waReload">Refresh</button></div>
@@ -515,6 +530,15 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
   <div class="seg" id="rqTabs" role="group" aria-label="Filter requests"><button type="button" data-f="Pending" aria-pressed="true">Pending</button><button type="button" data-f="Approved" aria-pressed="false">Approved</button><button type="button" data-f="Rejected" aria-pressed="false">Rejected</button><button type="button" data-f="All" aria-pressed="false">All</button></div>
   <div class="rq-list" id="rqList"></div>
 </section>
+<div class="modal" id="payBox" hidden>
+  <div class="modal-in wide" role="dialog" aria-labelledby="payTitle">
+    <h3 id="payTitle">Owner payment</h3><div class="status" id="paySub"></div>
+    <div id="payForm"></div>
+    <div id="payZoho" class="zoho-box"></div>
+    <div class="status" id="payNote"></div>
+    <div class="modal-btns"><button class="btn ghost" id="payClose" type="button">Close</button><button class="btn primary" id="paySave" type="button" disabled>Saved</button></div>
+  </div>
+</div>
 <div class="modal" id="plcBox" hidden>
   <div class="modal-in wide" role="dialog" aria-labelledby="plTitle">
     <h3 id="plTitle">New vehicle placement</h3>
@@ -657,6 +681,9 @@ const f3=v=>{const n=num(v);return n===null?"":n.toFixed(3)};
 const inr=v=>{const n=num(v);return n===null?"":n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})};
 const CONDS=["Tarpaulin Covered","Water Inside","Water Outside","Rusty Condition","White Rust","Coil / Packet Tampered","Edge Damage","Sample Received","Short Received","Other (see remarks)"];
 const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",rem:""});
+const PAY_F=[{k:"vehOwn",l:"Vehicle",type:"select",opts:["Market vehicle","Own vehicle"]},{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor",mkt:1},{k:"ownerMob",l:"Owner Mobile (WhatsApp)",type:"tel",mkt:1},{k:"ownerPan",l:"Owner PAN",up:1,mkt:1},
+  {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"],mkt:1},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal",mkt:1},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal",mkt:1},
+  {k:"podRcvd",l:"Stamped LR + invoice received",type:"select",opts:["No","Yes"]},{k:"podDate",l:"Received on",type:"date"}];
 const isOwn=d=>!!d&&d.vehOwn==="Own vehicle";
 const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",vehOwn:"Market vehicle",hireType:"Fixed",podRcvd:"No",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
@@ -666,9 +693,7 @@ const SECTIONS=[
  {t:"Shipment",f:[{k:"veh",l:"Vehicle No.",list:"dlVeh",up:1},{k:"tveh",l:"Transhipped Vehicle",up:1},{k:"driver",l:"Driver Name"},{k:"driverMob",l:"Driver Mobile",type:"tel"},
    {k:"plant",l:"Plant Code"},{k:"vendor",l:"Vendor Code"},{k:"dno",l:"Delivery No."},{k:"ccode",l:"Consignee Code"},
    {k:"lp",l:"Loading Point",w:2,list:"dlPlace"},{k:"dest",l:"Destination",w:2,list:"dlPlace"}]},
- {t:"Vehicle owner payment",hint:"Not printed on the LR. For a market vehicle, pay the advance and balance in Zoho Books; the status shows here",owner:1,f:[{k:"vehOwn",l:"Vehicle",type:"select",opts:["Market vehicle","Own vehicle"]},{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor",mkt:1},{k:"ownerMob",l:"Owner Mobile",type:"tel",mkt:1},{k:"ownerPan",l:"Owner PAN",up:1,mkt:1},
-   {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"],mkt:1},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal",mkt:1},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal",mkt:1},
-   {k:"podRcvd",l:"Stamped LR + invoice received",type:"select",opts:["No","Yes"]},{k:"podDate",l:"Received on",type:"date"}]},
+ {t:"Vehicle owner payment",hint:"Not printed on the LR. Handled in the Payments tab",payLink:1},
  {t:"Consignor (From)",hint:"Pick a past party to fill address and GSTIN",f:[{k:"cnorName",l:"Name",w:2,list:"dlParty",party:"cnor"},{k:"cnorGst",l:"GSTIN",w:2,up:1},{k:"cnorAddr",l:"Address",w:4,type:"area"},{k:"cnorEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cnorMob",l:"WhatsApp Mobile",type:"tel"},{k:"cnorLoc",l:"Loading location (paste Google Maps link, optional)",w:4}]},
  {t:"Consignee (To)",f:[{k:"cneeName",l:"Name",w:2,list:"dlParty",party:"cnee"},{k:"cneeGst",l:"GSTIN",w:2,up:1},{k:"cneeAddr",l:"Address",w:4,type:"area"},{k:"cneeEmail",l:"Email (gets the PDF copy, commas for more than one)",w:3,type:"email",multi:1},{k:"cneeMob",l:"WhatsApp Mobile",type:"tel"},{k:"cneeLoc",l:"Delivery location for driver (paste Google Maps link, optional)",w:4}]},
  {t:"Billed To",billed:1},
@@ -724,7 +749,7 @@ function buildForm(){
       if(cl)h+=`<div class="grid" style="margin-bottom:12px">${fieldHTML({k:"clientLrNo",l:"Client's LR No. *",w:2,up:1})}${fieldHTML({k:"clientLrDate",l:"Client's LR Date",type:"date"})}</div><p class="kind-note">The company issues the LR. LR Desk keeps this trip under its own trip number, sends the driver the delivery details on WhatsApp, tracks delivery and sends the delivered notice. No LR is printed from here.</p>`;}
     if(s.f)h+=`<div class="grid">${s.f.map(x=>fieldHTML(isClient(cur)&&x.k==="date"?Object.assign({},x,{l:"Loading Date"}):x)).join("")}</div>`;
     if(s.status){h+=`<div id="statWrap">${statusHTML()}</div>`}
-    if(s.owner)h+=`<div id="zohoWrap" class="zoho-box">${zohoHTML()}</div>`;
+    if(s.payLink)h+=`<div id="payLink" class="zoho-box">${payLinkHTML()}</div>`;
     if(s.billed){
       const b=bill(cur),auto=cur.billTo!=="Other";
       h+=`<div class="seg" role="group" aria-label="Bill to">${["Consignor","Consignee","Other"].map(o=>`<button type="button" data-bill="${o}" aria-pressed="${cur.billTo===o}">${o}</button>`).join("")}</div>
@@ -751,7 +776,7 @@ function buildForm(){
     h+=`</section>`;
   });
   h+=`<datalist id="dlParty"></datalist><datalist id="dlVendor"></datalist><datalist id="dlVeh"></datalist><datalist id="dlPlace"></datalist>`;
-  F.innerHTML=h;F.classList.toggle("own-veh",isOwn(cur));fillLists();
+  F.innerHTML=h;fillLists();
 }
 let sharedParties=[];
 function fillLists(){
@@ -792,32 +817,33 @@ $("form").addEventListener("input",e=>{
 $("form").addEventListener("change",e=>{if(e.target.tagName==="SELECT"){cur[e.target.dataset.k]=e.target.value;if(/^(hire|pod|vehOwn)/.test(e.target.dataset.k))refreshZoho();markDirty()}});
 const ZST={draft:"Draft",open:"Unpaid",overdue:"Overdue",partially_paid:"Partly paid",paid:"Paid",void:"Void"};
 const OWNV="Own vehicle";
-function zohoHTML(){
-  const t=hireTotal(cur),z=cur.zoho||{};
-  if(isOwn(cur))return `<div class="zh-msg">Own vehicle: no owner bill, payment or owner WhatsApp.${z.billId?` This LR already has Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> from before; void it in Zoho Books if it is not needed.`:""}</div>`+(cur.podRcvd==="Yes"?`<div class="zh-row"><span class="chip sm done">Stamped LR received${cur.podDate?" "+esc(fd(cur.podDate)):""}</span></div>`:"");
-  let h=`<div class="zh-row"><span>Hire total <b>${rs(t)}</b>${cur.hireType==="Per MT"?` <small>(${totals(cur).n.toFixed(3)} MT x ${rs(cur.hireRate)})</small>`:""}</span>`;
+function zohoHTML(L){L=L||cur;
+  const t=hireTotal(L),z=L.zoho||{};
+  if(isOwn(L))return `<div class="zh-msg">Own vehicle: no owner bill, payment or owner WhatsApp.${z.billId?` This LR already has Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> from before; void it in Zoho Books if it is not needed.`:""}</div>`+(L.podRcvd==="Yes"?`<div class="zh-row"><span class="chip sm done">Stamped LR received${L.podDate?" "+esc(fd(L.podDate)):""}</span></div>`:"");
+  let h=`<div class="zh-row"><span>Hire total <b>${rs(t)}</b>${L.hireType==="Per MT"?` <small>(${totals(L).n.toFixed(3)} MT x ${rs(L.hireRate)})</small>`:""}</span>`;
   if(z.billId&&z.total!==undefined)h+=`<span>Paid <b>${rs(z.paid)}</b></span><span>Balance <b>${rs(z.balance)}</b></span><span class="chip sm ${z.billStatus==="paid"?"done":z.paid>0?"req":"transit"}">${esc(ZST[z.billStatus]||z.billStatus||"")}</span>`;
-  if(cur.podRcvd==="Yes")h+=`<span class="chip sm done">Stamped LR received${cur.podDate?" "+esc(fd(cur.podDate)):""}</span>`;
+  if(L.podRcvd==="Yes")h+=`<span class="chip sm done">Stamped LR received${L.podDate?" "+esc(fd(L.podDate)):""}</span>`;
   h+=`</div>`;
-  if(z.billId&&(z.payments||[]).length)h+=`<div class="zh-pays">${z.payments.map(p=>`<span>${esc(fd(p.date))} · ${rs(p.amount)}${p.mode?" · "+esc(p.mode):""}${p.ref?" · "+esc(p.ref):""}${(()=>{const k=p.id||[p.date,p.amount,p.ref].join("|"),w=(z.payWa||[]).filter(x=>x.key===k&&x.to).pop();return w?` · <b class="wa-ok" title="${esc("WhatsApp sent to "+w.to+" on "+w.at+" by "+w.by)}">WhatsApp sent${w.bulk>1?` (one message for ${w.bulk} LRs)`:""}</b>`:""})()}</span>`).join("")}</div>`;
+  if(z.billId&&(z.payments||[]).length)h+=`<div class="zh-pays">${z.payments.map(p=>`<span>${esc(fd(p.date))} · ${rs(p.amount)}${p.mode?" · "+esc(p.mode):""}${p.ref?" · "+esc(p.ref):""}${(()=>{const k=p.id||[p.date,p.amount,p.ref].join("|"),w=(z.payWa||[]).filter(x=>x.key===k&&x.to).pop();return w?` · <b class="wa-ok" title="${esc("WhatsApp sent to "+w.to+" on "+w.at+" by "+w.by)}">WhatsApp sent${w.bulk>1?` (one message for ${w.bulk} LRs)`:""}</b>${w.ack==="received"?` · <b class="wa-ok" title="${esc((w.ackFrom||"")+" "+(w.ackAt||""))}">Owner confirmed received</b>`:w.ack==="question"?` · <b class="wa-q" title="${esc(w.ackText||"")}">Owner has a question</b>`:""}`:""})()}</span>`).join("")}</div>`;
   let msg="",tone="";
   if(z.billId){msg=`Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> for ${rs(z.total!==undefined?z.total:z.amount)}`+(z.checkedAt?` <small>· checked ${esc((()=>{const d=new Date(String(z.checkedAt).replace(" ","T"));return isNaN(d)?z.checkedAt:d.toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})})())}</small>`:"")+".";tone=z.billStatus==="paid"?"ok":""}
   if(z.status==="error"){msg=(msg?msg+" ":"")+`Zoho Books: ${esc(z.error)}`;tone="err"}
-  if(!msg){if(settings.zoho)msg=!cur.lrNo?"A Zoho Books bill for the full hire will be created when this LR is saved.":(!String(cur.owner||"").trim()||!(t>0))?"Add the vendor name and hire to create the Zoho Books bill.":"No Zoho Books bill yet.";
+  if(!msg){if(settings.zoho)msg=!L.lrNo?"A Zoho Books bill for the full hire will be created when you save.":(!String(L.owner||"").trim()||!(t>0))?"Add the vendor name and hire to create the Zoho Books bill.":"No Zoho Books bill yet.";
     else if(settings.zohoSetup)msg="Zoho Books is switched on in Settings but not connected yet.";}
-  const btn=settings.zoho&&isAdmin()&&cur.lrNo&&String(cur.owner||"").trim()&&t>0&&(z.status==="error"||!z.billId||(z.billId&&Number(z.amount)!==t))?`<button type="button" class="btn sm" id="bZoho">${z.billId?"Update Zoho bill":z.status==="error"?"Retry Zoho bill":"Create Zoho bill"}</button>`:"";
+  const btn=settings.zoho&&isAdmin()&&L.lrNo&&String(L.owner||"").trim()&&t>0&&(z.status==="error"||!z.billId||(z.billId&&Number(z.amount)!==t))?`<button type="button" class="btn sm" id="bZoho">${z.billId?"Update Zoho bill":z.status==="error"?"Retry Zoho bill":"Create Zoho bill"}</button>`:"";
   const ref=settings.zoho&&z.billId?`<button type="button" class="btn ghost sm" id="bZohoRef">Refresh</button>`:"";
   const wab=settings.waOwner&&isAdmin()&&z.billId&&(z.payments||[]).length?`<button type="button" class="btn ghost sm" id="bOwnerWa">WhatsApp latest payment to owner</button>`:"";
   return h+(msg||btn||ref?`<div class="zh-msg ${tone}">${msg} ${btn}${ref}${wab}</div>`:"");
 }
 async function zohoCheck(quiet){if(!settings.zoho||!cur.lrNo||!(cur.zoho&&cur.zoho.billId))return;const no=cur.lrNo;
   try{const j=await api("zohoStatus",{lrNo:no},45000);if(j.zoho&&cur.lrNo===no){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===no);if(i>=0)all[i].zoho=j.zoho;refreshZoho()}if(!quiet&&j.error)toast("Zoho Books: "+j.error)}catch(e){if(!quiet)toast(e.message)}}
-function refreshZoho(){$("form").classList.toggle("own-veh",isOwn(cur));const w=$("zohoWrap");if(w)w.innerHTML=zohoHTML()}
-$("form").addEventListener("click",async e=>{if(e.target.id==="bOwnerWa"){const b=e.target;b.disabled=true;b.textContent="Sending…";
-    try{const j=await api("ownerPayWa",{lrNo:cur.lrNo},45000);if(j.zoho){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=j.zoho}refreshZoho();toast(j.waSent?"Payment WhatsApp sent to "+j.waSent+(j.bulk>1?` (one message covering ${j.bulk} LRs paid together)`:""):(j.error||"Not sent"))}catch(err){toast(err.message);b.disabled=false;b.textContent="WhatsApp latest payment to owner"}return}
-  if(e.target.id==="bZohoRef"){e.target.disabled=true;e.target.textContent="Checking…";await zohoCheck(false);return}if(e.target.id!=="bZoho")return;if(!(await ensureSaved()))return;const b=e.target;b.disabled=true;b.textContent="Working…";
-  try{const j=await api("zohoBill",{lrNo:cur.lrNo},60000);cur.zoho=j.lr.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=cur.zoho;refreshZoho();toast(cur.zoho.status==="ok"?"Zoho Books bill is up to date.":"Zoho Books: "+cur.zoho.error)}
-  catch(err){toast(err.message);refreshZoho()}});
+function payLinkHTML(){const z=cur.zoho||{},t=hireTotal(cur);
+  if(!cur.lrNo)return `<div class="zh-msg">After you save this LR, add the vehicle owner, hire and payments in the <b>Payments</b> tab.${String(cur.owner||"").trim()?` Vendor from the placement or vehicle: <b>${esc(cur.owner)}</b>${t>0?", hire "+rs(t):""}.`:""}</div>`;
+  if(isOwn(cur))return `<div class="zh-msg">Own vehicle, no owner payment. <button type="button" class="btn ghost sm" id="bPayOpen">Open in Payments</button></div>`;
+  const st=z.billId?`${esc(cur.owner||"")} · Hire <b>${rs(z.total!==undefined?z.total:z.amount)}</b> · Paid <b>${rs(z.paid||0)}</b> · Balance <b>${rs(z.balance!==undefined?z.balance:z.amount)}</b>`:String(cur.owner||"").trim()?`${esc(cur.owner)}${t>0?" · Hire "+rs(t):""} · no Zoho bill yet`:"Vendor and hire not added yet";
+  return `<div class="zh-msg">${st} <button type="button" class="btn ghost sm" id="bPayOpen">Open in Payments</button></div>`}
+function refreshZoho(){const w=$("payLink");if(w)w.innerHTML=payLinkHTML()}
+$("form").addEventListener("click",e=>{if(e.target.id==="bPayOpen"){if(dirty){toast("Save this LR first.");return}setMode("pay");openPay(cur.lrNo)}});
 function syncBill(){const b=bill(cur);$("i_billName").value=b.name||"";$("i_billAddr").value=b.addr||"";$("i_billGst").value=b.gst||"";$("i_billEmail").value=b.email||"";$("i_billMob").value=b.mob||""}
 $("form").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
@@ -1062,7 +1088,7 @@ async function refresh(first){
     listLoaded=true;
     fillLists();renderList();
     if(first&&!dirty&&all.length)load(all[0]);
-    status();schedule();renderReqBadge();renderDash();renderReqs();renderPlc();
+    status();schedule();renderReqBadge();renderDash();renderReqs();renderPlc();renderPay();
     if(isAdmin()&&settings.wa)loadInbox(true);
   }catch(e){if(e.code!=="auth")toast(e.message)}
 }
@@ -1345,9 +1371,9 @@ function setMode(m){
   if(m!=="form"&&!unlocked){showLock("Sign in first.");return}
   document.body.dataset.mode=m;
   if(m==="inbox"&&!isAdmin())m="plc";
-  ["vForm","vPlc","vDash","vReq","vInbox"].forEach(id=>$(id).setAttribute("aria-pressed",String(id==={form:"vForm",plc:"vPlc",dash:"vDash",reqs:"vReq",inbox:"vInbox"}[m])));
+  ["vForm","vPlc","vPay","vDash","vReq","vInbox"].forEach(id=>$(id).setAttribute("aria-pressed",String(id==={form:"vForm",plc:"vPlc",pay:"vPay",dash:"vDash",reqs:"vReq",inbox:"vInbox"}[m])));
   try{localStorage.setItem("lrMode",m)}catch(e){}
-  if(m==="inbox")renderInbox();if(m==="dash")renderDash();if(m==="reqs")renderReqs();if(m==="plc")renderPlc();if(m==="form")requestAnimationFrame(fit);
+  if(m==="pay")renderPay();if(m==="inbox")renderInbox();if(m==="dash")renderDash();if(m==="reqs")renderReqs();if(m==="plc")renderPlc();if(m==="form")requestAnimationFrame(fit);
   window.scrollTo(0,0);
 }
 $("vForm").onclick=()=>setMode("form");$("vDash").onclick=()=>setMode("dash");$("vReq").onclick=()=>setMode("reqs");
@@ -1790,6 +1816,93 @@ $("waThread").addEventListener("click",async e=>{
 $("waThread").addEventListener("keydown",e=>{if(e.target.id==="waText"&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();$("waSend").click()}});
 $("vInbox").onclick=()=>{if(!isAdmin()){toast("Only an admin can open the WhatsApp inbox.");return}setMode("inbox");loadInbox(false);startInboxPoll()};
 setInterval(()=>{if(unlocked&&isAdmin()&&settings.wa&&document.body.dataset.mode!=="inbox"&&!document.hidden)loadInbox(true)},120000);
+
+/* ===================== Payments tab: vehicle owner bills and payments (after the LR is issued) ===================== */
+let payFilter="setup",pd=null,payOrig=null;
+const PAYF=[["setup","To set up"],["adv","Advance due"],["await","Awaiting stamped LR"],["ready","Ready to pay balance"],["paid","Paid"],["own","Own vehicles"],["all","All"]];
+function payState(d){
+  if(isOwn(d))return"own";const z=d.zoho||{};
+  if(!z.billId||z.status==="error"&&!z.billId)return"setup";
+  const bal=z.balance!==undefined?Number(z.balance):Number(z.amount)||0,paid=Number(z.paid)||0;
+  if(bal<=0)return"paid";if(paid<=0)return"adv";return d.podRcvd==="Yes"?"ready":"await";
+}
+const PAY_SETUP_DAYS=60;
+function payInFilter(d,f){const st=payState(d);if(f==="all")return true;if(f==="setup"&&st==="setup")return (Date.now()-new Date(String(d.date||"")+"T00:00:00").getTime())<PAY_SETUP_DAYS*86400000;if(f==="ready")return st==="ready"||(st==="adv"&&d.podRcvd==="Yes");return st===f}
+function payAck(d){const w=((d.zoho||{}).payWa||[]).filter(x=>x.to);const l=w[w.length-1];if(!l)return"";
+  return l.ack==="received"?`<span class="wa-ok">Confirmed</span>`:l.ack==="question"?`<span class="wa-q" title="${esc(l.ackText||"")}">Question</span>`:`<span class="sub">WhatsApp sent</span>`}
+function renderPay(){
+  if(!$("payList")||!unlocked)return;
+  const q=($("payQ").value||"").trim().toLowerCase();
+  const base=all.filter(d=>d.lrNo&&!d.deleted);
+  const counts={};PAYF.forEach(([k])=>counts[k]=base.filter(d=>payInFilter(d,k)).length);
+  {const bd=$("payBadge");if(bd){bd.textContent=counts.ready;bd.hidden=!counts.ready}}
+  $("payTabs").innerHTML=PAYF.map(([k,l])=>`<button type="button" data-pf="${k}" aria-pressed="${k===payFilter}">${l}${k!=="all"&&counts[k]?` <em class="pill-n${k==="ready"?" red":""}">${counts[k]}</em>`:""}</button>`).join("");
+  const list=base.filter(d=>payInFilter(d,payFilter)).filter(d=>!q||[d.lrNo,d.clientLrNo,d.veh,d.owner,d.cnorName,d.cneeName,d.placementNo,(d.zoho||{}).billNo].join(" ").toLowerCase().includes(q))
+    .sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))||String(b.lrNo).localeCompare(String(a.lrNo)));
+  const mk=base.filter(d=>!isOwn(d)&&(d.zoho||{}).billId),sum=f=>mk.reduce((a,d)=>a+(Number(f(d))||0),0);
+  const bal=d=>{const z=d.zoho||{};return z.balance!==undefined?z.balance:z.amount};
+  $("payKpis").innerHTML=[["Hire (Zoho bills)",rs(sum(d=>d.zoho.total!==undefined?d.zoho.total:d.zoho.amount)),mk.length+" bills"],["Paid to owners",rs(sum(d=>d.zoho.paid)),""],["Balance due",rs(sum(bal)),""],
+    ["Ready to pay balance",rs(base.filter(d=>payInFilter(d,"ready")).reduce((a,d)=>a+(Number(bal(d))||0),0)),counts.ready+" LRs, stamped LR received"],["To set up",counts.setup,"LRs of the last 60 days without a Zoho bill"]]
+    .map(([l,v,s])=>`<div class="kpi"><span>${l}</span><b>${v}</b>${s?`<small>${s}</small>`:""}</div>`).join("");
+  $("payList").innerHTML=list.length?`<table class="dt pay-t"><thead><tr><th>LR No.</th><th>Date</th><th>Vehicle</th><th>Vendor</th><th class="r">Hire</th><th class="r">Paid</th><th class="r">Balance</th><th>Stamped LR</th><th>Owner</th><th></th></tr></thead><tbody>${list.map(d=>{
+      const z=d.zoho||{},own=isOwn(d),st=payState(d),hire=z.billId?(z.total!==undefined?z.total:z.amount):hireTotal(d);
+      const chip={setup:`<span class="chip sm transit">${z.status==="error"?"Zoho error":"To set up"}</span>`,adv:`<span class="chip sm transit">Unpaid</span>`,await:`<span class="chip sm req">Part paid</span>`,ready:`<span class="chip sm req">Part paid</span>`,paid:`<span class="chip sm done">Paid</span>`,own:`<span class="sub">Own vehicle</span>`}[st];
+      return `<tr data-pay="${esc(d.lrNo)}"><td class="nw"><b>${esc(d.lrNo)}</b>${d.clientLrNo&&d.kind==="client"?`<div class="sub">${esc(d.clientLrNo)}</div>`:""}</td><td class="nw">${esc(fd(d.date))}</td><td class="nw">${esc(d.veh||"")}</td>
+        <td>${own?"":esc(d.owner||"")}<div class="sub">${esc([d.cnorName,d.cneeName].filter(Boolean).join(" to "))}</div></td>
+        <td class="r nw">${own?"":hire>0?rs(hire):""}</td><td class="r nw">${z.billId&&!own?rs(z.paid||0):""}</td><td class="r nw">${z.billId&&!own?`<b>${rs(bal(d))}</b>`:""}</td>
+        <td class="nw">${d.podRcvd==="Yes"?`<span class="chip sm done">${esc(fd(d.podDate||"")||"Yes")}</span>`:own?"":`<span class="sub">Not yet</span>`}</td>
+        <td class="nw">${own?"":payAck(d)}</td><td class="nw">${chip} <button type="button" class="btn ghost sm">Open</button></td></tr>`}).join("")}</tbody></table>`
+    :`<div class="empty">${base.length?"No LRs here.":"No LRs yet."}</div>`;
+}
+function payFieldHTML(x){
+  const v=esc(pd[x.k]||""),id="pay_"+x.k,locked=x.mkt&&!isAdmin()&&(pd.zoho||{}).billId&&x.k!=="vehOwn"||(x.k==="vehOwn"&&!isAdmin()&&(pd.zoho||{}).billId);
+  const input=x.type==="select"?`<select id="${id}" data-pk="${x.k}"${locked?" disabled":""}>${x.opts.map(o=>`<option${o===(pd[x.k]||x.opts[0])?" selected":""}>${o}</option>`).join("")}</select>`
+    :`<input id="${id}" data-pk="${x.k}" type="${x.type||"text"}" value="${v}"${x.list?` list="${x.list}"`:""}${x.mode?` inputmode="${x.mode}"`:""}${locked?" readonly":""}>`;
+  return `<div class="f${x.w===2?" w2":""}${x.mkt?" mkt":""}"><label for="${id}">${x.l}</label>${input}</div>`;
+}
+function payRender(){
+  const d=pd;$("payTitle").textContent=`Owner payment · ${d.lrNo}`;
+  $("paySub").textContent=[d.veh,fd(d.date),[d.cnorName||d.lp,d.cneeName||d.dest].filter(Boolean).join(" to "),totals(d).n?totals(d).n.toFixed(3)+" MT":""].filter(Boolean).join(" · ");
+  $("payForm").innerHTML=`<div class="grid">${PAY_F.map(payFieldHTML).join("")}</div>`;
+  $("payBox").querySelector(".modal-in").classList.toggle("own-veh",isOwn(d));
+  $("payZoho").innerHTML=zohoHTML(d);
+  const ch=JSON.stringify(PAY_F.map(x=>d[x.k]||""))!==JSON.stringify(PAY_F.map(x=>payOrig[x.k]||""));
+  $("paySave").textContent=ch?"Save":"Saved";$("paySave").disabled=!ch;
+  $("payNote").textContent=(d.zoho||{}).billId&&!isAdmin()?"The Zoho bill is made, so only an admin can change the vendor or hire. You can mark the stamped LR.":"";
+}
+async function openPay(no){
+  const d=all.find(x=>x.lrNo===no);if(!d){toast("LR not found.");return}
+  pd=JSON.parse(JSON.stringify(d));if(!pd.vehOwn)pd.vehOwn="Market vehicle";if(!pd.hireType)pd.hireType="Fixed";if(!pd.podRcvd)pd.podRcvd="No";
+  if(!isOwn(pd)&&!String(pd.owner||"").trim()){const o=(window._vehicles||{})[String(pd.veh||"").replace(/[^A-Za-z0-9]/g,"").toUpperCase()];
+    if(o&&o.own==="Own vehicle")pd.vehOwn="Own vehicle";else if(o){pd.owner=o.owner||"";pd.ownerMob=pd.ownerMob||o.mob||"";pd.ownerPan=pd.ownerPan||o.pan||"";if(o.hireType)pd.hireType=o.hireType}}
+  payOrig=JSON.parse(JSON.stringify(d));if(!payOrig.vehOwn)payOrig.vehOwn="Market vehicle";if(!payOrig.hireType)payOrig.hireType="Fixed";if(!payOrig.podRcvd)payOrig.podRcvd="No";
+  $("payNote").dataset.warn="";payRender();$("payBox").hidden=false;
+  if(settings.zoho&&(pd.zoho||{}).billId){try{const j=await api("zohoStatus",{lrNo:no},45000);if(j.zoho&&pd&&pd.lrNo===no){pd.zoho=j.zoho;payOrig.zoho=j.zoho;payStore(no,{zoho:j.zoho});$("payZoho").innerHTML=zohoHTML(pd)}}catch(e){}}
+}
+function payStore(no,patch){const i=all.findIndex(x=>x.lrNo===no);if(i>=0)Object.assign(all[i],patch);if(cur.lrNo===no){Object.assign(cur,patch);refreshZoho()}}
+$("payForm").addEventListener("input",e=>{const k=e.target.dataset.pk;if(!k)return;let v=e.target.value;if(k==="ownerPan"){v=v.toUpperCase();e.target.value=v}pd[k]=v;
+  if(k==="vehOwn"||k==="podRcvd"){if(k==="podRcvd"&&v==="Yes"&&!pd.podDate){pd.podDate=new Date().toISOString().slice(0,10)}payRender();return}
+  $("payZoho").innerHTML=zohoHTML(pd);const ch=JSON.stringify(PAY_F.map(x=>pd[x.k]||""))!==JSON.stringify(PAY_F.map(x=>payOrig[x.k]||""));$("paySave").textContent=ch?"Save":"Saved";$("paySave").disabled=!ch});
+$("paySave").onclick=async()=>{const b=$("paySave");b.disabled=true;b.textContent="Saving…";
+  const pay={};PAY_F.forEach(x=>pay[x.k]=pd[x.k]||"");
+  try{const j=await api("savePay",{lrNo:pd.lrNo,pay},60000);const patch={};[...PAY_F.map(x=>x.k),"zoho","updatedAt","updatedByName"].forEach(k=>patch[k]=j.lr[k]);
+    payStore(pd.lrNo,patch);pd=Object.assign(pd,patch);payOrig=JSON.parse(JSON.stringify(pd));rememberVehicle(pd);payRender();renderPay();
+    const z=pd.zoho||{};toast(z.status==="error"?"Saved. Zoho Books: "+z.error:z.billId?`Saved. Zoho bill ${z.billNo||""} for ${rs(z.total!==undefined?z.total:z.amount)}`:"Saved")}
+  catch(err){toast(err.message);payRender()}};
+$("payZoho").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b||!pd)return;const no=pd.lrNo;
+  if(b.id==="bZohoRef"){b.disabled=true;b.textContent="Checking…";try{const j=await api("zohoStatus",{lrNo:no},45000);if(j.zoho){pd.zoho=j.zoho;payOrig.zoho=j.zoho;payStore(no,{zoho:j.zoho})}if(j.error)toast("Zoho Books: "+j.error)}catch(err){toast(err.message)}$("payZoho").innerHTML=zohoHTML(pd);renderPay();return}
+  if(b.id==="bOwnerWa"){b.disabled=true;b.textContent="Sending…";try{const j=await api("ownerPayWa",{lrNo:no},45000);if(j.zoho){pd.zoho=j.zoho;payStore(no,{zoho:j.zoho})}
+      toast(j.waSent?"Payment WhatsApp sent to "+j.waSent+(j.bulk>1?` (one message covering ${j.bulk} LRs paid together)`:""):(j.error||"Not sent"))}catch(err){toast(err.message)}$("payZoho").innerHTML=zohoHTML(pd);renderPay();return}
+  if(b.id==="bZoho"){if(!$("paySave").disabled){toast("Save the changes first.");return}b.disabled=true;b.textContent="Working…";
+    try{const j=await api("zohoBill",{lrNo:no},60000);pd.zoho=j.lr.zoho;payOrig.zoho=pd.zoho;payStore(no,{zoho:pd.zoho,owner:j.lr.owner});toast(pd.zoho.status==="ok"?"Zoho Books bill ready":"Zoho Books: "+pd.zoho.error)}catch(err){toast(err.message)}
+    $("payZoho").innerHTML=zohoHTML(pd);renderPay()}});
+$("payClose").onclick=()=>{if(!$("paySave").disabled&&!confirmClose())return;$("payBox").hidden=true;pd=null};
+function confirmClose(){const n=$("payNote");if(n.dataset.warn==="1"){n.dataset.warn="";return true}n.dataset.warn="1";n.textContent="You have unsaved changes. Click Close again to discard them.";return false}
+$("payBox").addEventListener("click",e=>{if(e.target===$("payBox"))$("payClose").click()});
+$("payList").addEventListener("click",e=>{const r=e.target.closest("[data-pay]");if(r)openPay(r.dataset.pay)});
+$("payTabs").addEventListener("click",e=>{const b=e.target.closest("[data-pf]");if(b){payFilter=b.dataset.pf;renderPay()}});
+$("payQ").addEventListener("input",renderPay);
+$("vPay").onclick=()=>setMode("pay");
 /* ---------- Light / dark switch (Auto follows the device) ---------- */
 function applyTheme(){let t="auto";try{t=localStorage.getItem("lrTheme")||"auto"}catch(e){}
   if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
