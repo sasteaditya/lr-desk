@@ -799,7 +799,7 @@ function zohoHTML(){
   if(z.billId&&z.total!==undefined)h+=`<span>Paid <b>${rs(z.paid)}</b></span><span>Balance <b>${rs(z.balance)}</b></span><span class="chip sm ${z.billStatus==="paid"?"done":z.paid>0?"req":"transit"}">${esc(ZST[z.billStatus]||z.billStatus||"")}</span>`;
   if(cur.podRcvd==="Yes")h+=`<span class="chip sm done">Stamped LR received${cur.podDate?" "+esc(fd(cur.podDate)):""}</span>`;
   h+=`</div>`;
-  if(z.billId&&(z.payments||[]).length)h+=`<div class="zh-pays">${z.payments.map(p=>`<span>${esc(fd(p.date))} · ${rs(p.amount)}${p.mode?" · "+esc(p.mode):""}${p.ref?" · "+esc(p.ref):""}${(()=>{const k=p.id||[p.date,p.amount,p.ref].join("|"),w=(z.payWa||[]).filter(x=>x.key===k&&x.to).pop();return w?` · <b class="wa-ok" title="${esc("WhatsApp sent to "+w.to+" on "+w.at+" by "+w.by)}">WhatsApp sent</b>`:""})()}</span>`).join("")}</div>`;
+  if(z.billId&&(z.payments||[]).length)h+=`<div class="zh-pays">${z.payments.map(p=>`<span>${esc(fd(p.date))} · ${rs(p.amount)}${p.mode?" · "+esc(p.mode):""}${p.ref?" · "+esc(p.ref):""}${(()=>{const k=p.id||[p.date,p.amount,p.ref].join("|"),w=(z.payWa||[]).filter(x=>x.key===k&&x.to).pop();return w?` · <b class="wa-ok" title="${esc("WhatsApp sent to "+w.to+" on "+w.at+" by "+w.by)}">WhatsApp sent${w.bulk>1?` (one message for ${w.bulk} LRs)`:""}</b>`:""})()}</span>`).join("")}</div>`;
   let msg="",tone="";
   if(z.billId){msg=`Zoho Books bill <b>${esc(z.billNo||z.billId)}</b> for ${rs(z.total!==undefined?z.total:z.amount)}`+(z.checkedAt?` <small>· checked ${esc((()=>{const d=new Date(String(z.checkedAt).replace(" ","T"));return isNaN(d)?z.checkedAt:d.toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})})())}</small>`:"")+".";tone=z.billStatus==="paid"?"ok":""}
   if(z.status==="error"){msg=(msg?msg+" ":"")+`Zoho Books: ${esc(z.error)}`;tone="err"}
@@ -814,7 +814,7 @@ async function zohoCheck(quiet){if(!settings.zoho||!cur.lrNo||!(cur.zoho&&cur.zo
   try{const j=await api("zohoStatus",{lrNo:no},45000);if(j.zoho&&cur.lrNo===no){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===no);if(i>=0)all[i].zoho=j.zoho;refreshZoho()}if(!quiet&&j.error)toast("Zoho Books: "+j.error)}catch(e){if(!quiet)toast(e.message)}}
 function refreshZoho(){$("form").classList.toggle("own-veh",isOwn(cur));const w=$("zohoWrap");if(w)w.innerHTML=zohoHTML()}
 $("form").addEventListener("click",async e=>{if(e.target.id==="bOwnerWa"){const b=e.target;b.disabled=true;b.textContent="Sending…";
-    try{const j=await api("ownerPayWa",{lrNo:cur.lrNo},45000);if(j.zoho){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=j.zoho}refreshZoho();toast(j.waSent?"Payment WhatsApp sent to "+j.waSent:(j.error||"Not sent"))}catch(err){toast(err.message);b.disabled=false;b.textContent="WhatsApp latest payment to owner"}return}
+    try{const j=await api("ownerPayWa",{lrNo:cur.lrNo},45000);if(j.zoho){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=j.zoho}refreshZoho();toast(j.waSent?"Payment WhatsApp sent to "+j.waSent+(j.bulk>1?` (one message covering ${j.bulk} LRs paid together)`:""):(j.error||"Not sent"))}catch(err){toast(err.message);b.disabled=false;b.textContent="WhatsApp latest payment to owner"}return}
   if(e.target.id==="bZohoRef"){e.target.disabled=true;e.target.textContent="Checking…";await zohoCheck(false);return}if(e.target.id!=="bZoho")return;if(!(await ensureSaved()))return;const b=e.target;b.disabled=true;b.textContent="Working…";
   try{const j=await api("zohoBill",{lrNo:cur.lrNo},60000);cur.zoho=j.lr.zoho;const i=all.findIndex(d=>d.lrNo===cur.lrNo);if(i>=0)all[i].zoho=cur.zoho;refreshZoho();toast(cur.zoho.status==="ok"?"Zoho Books bill is up to date.":"Zoho Books: "+cur.zoho.error)}
   catch(err){toast(err.message);refreshZoho()}});
@@ -1728,7 +1728,7 @@ function waFmtNum(n){n=String(n||"");return n.length===12&&n.startsWith("91")?`+
 function waTime(ts){if(!ts)return"";const d=new Date(ts),now=new Date(),t=d.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
   return d.toDateString()===now.toDateString()?t:d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+" "+t}
 const WA_TPL={at_vehicle_info:"Vehicle details",at_placement_cancelled:"Placement cancelled",at_lr_copy:"LR copy (PDF)",at_lr_delivered:"Delivered notice",
-  at_driver_pickup:"Driver: loading details",at_driver_lr_pdf:"Driver: LR copy (PDF)",at_driver_delivery:"Driver: delivery details",at_owner_payment:"Owner: payment details"};
+  at_driver_pickup:"Driver: loading details",at_driver_lr_pdf:"Driver: LR copy (PDF)",at_driver_delivery:"Driver: delivery details",at_owner_payment:"Owner: payment details",at_owner_payment_bulk:"Owner: payment for several LRs"};
 function waConvs(){
   const by={};
   waData.msgs.forEach(m=>{if(!m.num)return;(by[m.num]=by[m.num]||[]).push(m)});
