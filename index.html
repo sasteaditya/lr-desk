@@ -701,7 +701,7 @@ const PAY_F=[{k:"vehOwn",l:"Vehicle",type:"select",opts:["Market vehicle","Own v
   {k:"podRcvd",l:"Stamped LR + invoice received",type:"select",opts:["No","Yes"]},{k:"podDate",l:"Received on",type:"date"}];
 // LRs before this date were paid outside LR Desk (Settings row 27). Older Sheet scripts do not send it, so 08-Nov-2026 is the default.
 const payFrom=()=>settings&&settings.payFrom!==undefined?settings.payFrom:"2026-11-08";
-const payOld=d=>!!payFrom()&&String(d.date||"")<payFrom()&&!((d.zoho||{}).billId);
+const payOld=d=>!!payFrom()&&!!d.date&&String(d.date)<payFrom()&&!((d.zoho||{}).billId);
 const isOwn=d=>!!d&&d.vehOwn==="Own vehicle";
 const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",vehOwn:"Market vehicle",hireType:"Fixed",podRcvd:"No",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
