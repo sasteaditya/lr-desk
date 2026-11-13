@@ -293,6 +293,14 @@ body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
 .zoho-box{margin-top:12px;display:flex;flex-direction:column;gap:8px}
 .zh-row{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}.zh-row small{color:var(--muted)}
 .own-veh .mkt{display:none!important}
+.wa-b.att{min-width:220px}
+.wa-img{display:block;padding:0;border:0;background:none;cursor:zoom-in;border-radius:8px;overflow:hidden;margin-bottom:4px;max-width:260px}
+.wa-img img{display:block;max-width:100%;max-height:300px;object-fit:cover}
+.wa-file{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 70%,transparent);margin-bottom:4px}
+.wa-fi{font-size:22px;line-height:1}.wa-fn{display:flex;flex-direction:column;min-width:0;flex:1}
+.wa-fn b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wa-fn small{color:var(--muted)}
+.wa-b audio{display:block;max-width:240px;margin-bottom:4px}
+.wa-b a{color:inherit;text-decoration:underline}
 .bg-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
 .bg-pill[hidden]{display:none}
 .bg-pill i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:bgspin .8s linear infinite}
@@ -1805,9 +1813,34 @@ function waConvs(){
     return{num,list,last,lastIn,name:waData.names[num]||(prof&&prof.name)||waFmtNum(num),unread:ins.filter(m=>m.ts>(seen[num]||0)).length,hasIn:!!ins.length};
   }).sort((a,b)=>(b.hasIn-a.hasIn)||(b.last.ts-a.last.ts));
 }
-function waPreview(m){return m.k==="tpl"?"Sent: "+(WA_TPL[m.text]||m.text):(m.dir==="out"?"You: ":"")+m.text}
+/* attachments: photos load as previews, other files open on click */
+const waFiles={},waLoadingF={};
+function waLink(t){return esc(t).replace(/(https:\/\/maps\.google\.com\/\?q=[-0-9.,]+)/g,'<a href="$1" target="_blank" rel="noopener">Open in Google Maps</a>').replace(/\n/g,"<br>")}
+function waSize(b){return b>1048576?(b/1048576).toFixed(1)+" MB":b>1024?Math.round(b/1024)+" KB":b?b+" B":""}
+function waAtt(m){const x=m.media;if(!x)return"";const f=waFiles[m.id],icon={image:"🖼️",sticker:"🙂",document:"📄",audio:"🎤",video:"🎬"}[x.kind]||"📎";
+  if((x.kind==="image"||x.kind==="sticker")&&f&&f.url)return `<button type="button" class="wa-img" data-wafile="${esc(m.id)}" title="Open full size"><img src="${f.url}" alt="${esc(x.name||"Photo")}"></button>`;
+  if(x.kind==="audio"&&f&&f.url)return `<audio controls preload="none" src="${f.url}"></audio>`;
+  const st=waLoadingF[m.id]?"Loading…":f&&f.err?f.err:x.err&&!x.saved?"Not saved yet: "+x.err:"";
+  return `<div class="wa-file"><span class="wa-fi">${icon}</span><span class="wa-fn"><b>${esc(x.name||String(m.text||"").split("\n")[0]||"File")}</b><small>${esc([waSize(x.size),st].filter(Boolean).join(" · "))}</small></span>
+    <button type="button" class="btn ghost sm" data-wafile="${esc(m.id)}"${waLoadingF[m.id]?" disabled":""}>${x.kind==="audio"?"Play":"Open"}</button></div>`}
+async function waGetFile(id,open){
+  if(waLoadingF[id])return;const have=waFiles[id];
+  if(have&&have.url){if(open)waOpenFile(have);return}
+  waLoadingF[id]=1;renderInboxKeep();
+  try{const j=await api("waMedia",{id},90000);
+    if(j.big){waFiles[id]={big:1,link:j.url,name:j.name};if(open)window.open(j.url,"_blank","noopener")}
+    else{const bin=atob(j.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+      waFiles[id]={url:URL.createObjectURL(new Blob([u],{type:j.mime})),mime:j.mime,name:j.name};if(open)waOpenFile(waFiles[id])}}
+  catch(e){waFiles[id]={err:e.message};if(open)toast(e.message)}
+  finally{delete waLoadingF[id];renderInboxKeep()}}
+function waOpenFile(f){if(f.link){window.open(f.link,"_blank","noopener");return}
+  if(/^(image|video|audio)\/|pdf/.test(f.mime||"")){window.open(f.url,"_blank","noopener");return}
+  const a=document.createElement("a");a.href=f.url;a.download=f.name||"file";document.body.appendChild(a);a.click();a.remove()}
+function renderInboxKeep(){const b=$("waMsgs"),top=b?b.scrollTop:0,atEnd=b?b.scrollHeight-b.scrollTop-b.clientHeight<40:true,keep=$("waText")?$("waText").value:null,foc=document.activeElement&&document.activeElement.id==="waText";
+  renderInbox(true);const n=$("waMsgs");if(n&&!atEnd)n.scrollTop=top;if(keep!==null&&$("waText")){$("waText").value=keep;if(foc)$("waText").focus()}}
+function waPreview(m){return m.k==="tpl"?"Sent: "+(WA_TPL[m.text]||m.text):(m.dir==="out"?"You: ":"")+(m.media?"📎 ":"")+String(m.text).split("\n")[0].replace(/ ?https:\/\/maps\.google\.com\/\S+/,"")}
 function renderWaBadge(){const n=waConvs().reduce((a,c)=>a+c.unread,0),b=$("waBadge");if(!b)return;b.textContent=n;b.hidden=!n}
-function renderInbox(){
+function renderInbox(keepScroll){
   renderWaBadge();
   if(document.body.dataset.mode!=="inbox")return;
   const q=($("waQ").value||"").trim().toLowerCase(),cs=waConvs().filter(c=>!q||(c.name+" "+c.num).toLowerCase().includes(q)||c.list.some(m=>String(m.text).toLowerCase().includes(q)));
@@ -1825,11 +1858,12 @@ function renderInbox(){
       <div><b>${esc(c.name)}</b><small>${esc(waFmtNum(c.num))}</small></div><a class="btn ghost sm" href="tel:+${esc(c.num)}">Call</a></div>
     <div class="wa-msgs" id="waMsgs">${c.list.map(m=>{const d=new Date(m.ts).toDateString(),sep=d!==day?`<div class="wa-day">${esc(new Date(m.ts).toLocaleDateString("en-IN",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}))}</div>`:"";day=d;
       return sep+(m.k==="tpl"?`<div class="wa-b out tpl"><span class="wa-tag">Automatic message</span><div>${esc(WA_TPL[m.text]||m.text)}${m.ref?` · ${esc(m.ref)}`:""}</div><small>${esc(waTime(m.ts))} · ${esc(m.status||"")}</small></div>`
-        :`<div class="wa-b ${m.dir}"><div>${esc(m.text).replace(/\n/g,"<br>")}</div><small>${esc(waTime(m.ts))}${m.dir==="out"?` · ${esc(m.by||"")} · ${esc(m.status||"Sent")}`:""}</small></div>`)}).join("")}</div>
+        :`<div class="wa-b ${m.dir}${m.media?" att":""}">${waAtt(m)}${m.media&&/^(Photo|Sticker|Video|Audio|Voice note|Document)(: .*)?$/.test(m.text)?"":`<div>${waLink(m.media?String(m.text).replace(/^(Photo|Sticker|Video|Audio|Voice note|Document)(: [^\n]*)?\n/,""):m.text)}</div>`}<small>${esc(waTime(m.ts))}${m.dir==="out"?` · ${esc(m.by||"")} · ${esc(m.status||"Sent")}`:""}</small></div>`)}).join("")}</div>
     <div class="wa-comp">${open?`<div class="wa-note">Free reply window: about ${left} hour${left>1?"s":""} left (WhatsApp allows normal replies for 24 hours after the client's last message).</div>
       <div class="wa-row"><textarea id="waText" rows="2" placeholder="Type a reply…" aria-label="Reply"></textarea><button type="button" class="btn primary" id="waSend">Send</button></div><div class="status" id="waErr"></div>`
       :`<div class="wa-note warn">${c.hasIn?"More than 24 hours since this person's last message, so WhatsApp only allows automatic template messages now. They can message you again to reopen the chat.":"This person has not messaged you yet. Only the automatic LR Desk messages can be sent to them."}</div>`}</div>`;
-  const box=$("waMsgs");box.scrollTop=box.scrollHeight;
+  const box=$("waMsgs");if(!keepScroll)box.scrollTop=box.scrollHeight;
+  c.list.filter(m=>m.media&&(m.media.kind==="image"||m.media.kind==="sticker")&&m.media.saved!==false&&!waFiles[m.id]&&!waLoadingF[m.id]).slice(-8).forEach(m=>waGetFile(m.id,false));
   if(c.unread&&c.lastIn){waSetSeen(c.num,c.lastIn.ts);if(c.lastIn.id)api("waRead",{id:c.lastIn.id}).catch(()=>{});renderWaBadge();
     const el=document.querySelector(`.wa-c[data-wanum="${c.num}"] .pill-n`);if(el)el.remove()}
 }
@@ -1846,6 +1880,7 @@ $("waList").addEventListener("click",e=>{const b=e.target.closest("[data-wanum]"
 $("waQ").addEventListener("input",renderInbox);
 $("waReload").onclick=()=>loadInbox(false);
 $("waThread").addEventListener("click",async e=>{
+  const fb=e.target.closest("[data-wafile]");if(fb){waGetFile(fb.dataset.wafile,true);return}
   if(e.target.id==="waBack"){waSel=null;renderInbox();return}
   if(e.target.id!=="waSend")return;
   const t=$("waText"),text=t.value.trim();if(!text){t.focus();return}
