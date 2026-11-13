@@ -293,6 +293,10 @@ body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
 .zoho-box{margin-top:12px;display:flex;flex-direction:column;gap:8px}
 .zh-row{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}.zh-row small{color:var(--muted)}
 .own-veh .mkt{display:none!important}
+.vsec{margin:8px 0 0;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.vsec small{text-transform:none;letter-spacing:0;font-weight:400}
+#vendForm{display:flex;flex-direction:column;gap:10px}
+#vendBox{z-index:30}
+.pays .d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .wa-b.att{min-width:220px}
 .wa-img{display:block;padding:0;border:0;background:none;cursor:zoom-in;border-radius:8px;overflow:hidden;margin-bottom:4px;max-width:260px}
 .wa-img img{display:block;max-width:100%;max-height:300px;object-fit:cover}
@@ -526,7 +530,7 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
   <div class="pl-list" id="plList"></div>
 </section>
 <section class="pays" id="pays">
-  <div class="d-head"><div><h1>Owner payments</h1><div class="status">After the LR is issued: vehicle owner, hire, Zoho Books bill, advance and balance. Pay in Zoho Books; the status shows here.</div></div></div>
+  <div class="d-head"><div><h1>Owner payments</h1><div class="status">After the LR is issued: vehicle owner, hire, Zoho Books bill, advance and balance. Pay in Zoho Books; the status shows here.</div><button class="btn primary" id="bNewVendor" type="button">+ New vendor</button></div></div>
   <div class="kpis" id="payKpis"></div>
   <div class="pl-bar"><div class="seg" id="payTabs" role="group" aria-label="Filter payments"></div>
     <input id="payQ" type="search" placeholder="Search LR, vehicle, vendor, party…" aria-label="Search payments"></div>
@@ -544,13 +548,54 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
   <div class="seg" id="rqTabs" role="group" aria-label="Filter requests"><button type="button" data-f="Pending" aria-pressed="true">Pending</button><button type="button" data-f="Approved" aria-pressed="false">Approved</button><button type="button" data-f="Rejected" aria-pressed="false">Rejected</button><button type="button" data-f="All" aria-pressed="false">All</button></div>
   <div class="rq-list" id="rqList"></div>
 </section>
+<div class="modal" id="vendBox" hidden>
+  <div class="modal-in wide" role="dialog" aria-labelledby="vendTitle">
+    <h3 id="vendTitle">New vendor</h3><div class="status">Creates the vendor in Zoho Books. Only the name is required; the rest can be added later in Zoho Books.</div>
+    <form id="vendForm" autocomplete="off">
+    <h4 class="vsec">Vendor</h4>
+    <div class="grid">
+      <div class="f w2"><label for="vn_name">Vendor name (as it should appear in Zoho Books)</label><input id="vn_name" maxlength="200" required></div>
+      <div class="f w2"><label for="vn_company">Company name, if different</label><input id="vn_company" maxlength="200"></div>
+      <div class="f"><label for="vn_person">Contact person</label><input id="vn_person" maxlength="100"></div>
+      <div class="f"><label for="vn_mobile">Mobile (WhatsApp)</label><input id="vn_mobile" type="tel" inputmode="tel" maxlength="16"></div>
+      <div class="f w2"><label for="vn_email">Email</label><input id="vn_email" type="email" inputmode="email" autocapitalize="off"></div>
+    </div>
+    <h4 class="vsec">Tax and address</h4>
+    <div class="grid">
+      <div class="f"><label for="vn_pan">PAN</label><input id="vn_pan" maxlength="10" placeholder="ABCDE1234F" autocapitalize="characters"></div>
+      <div class="f"><label for="vn_gstin">GSTIN, if registered</label><input id="vn_gstin" maxlength="15" placeholder="Leave empty if unregistered" autocapitalize="characters"></div>
+      <div class="f"><label for="vn_state">State</label><select id="vn_state"><option value="AN">Andaman and Nicobar Islands</option><option value="AP">Andhra Pradesh</option><option value="AR">Arunachal Pradesh</option><option value="AS">Assam</option><option value="BR">Bihar</option><option value="CH">Chandigarh</option><option value="CG">Chhattisgarh</option><option value="DN">Dadra and Nagar Haveli and Daman and Diu</option><option value="DL">Delhi</option><option value="GA">Goa</option><option value="GJ">Gujarat</option><option value="HR">Haryana</option><option value="HP">Himachal Pradesh</option><option value="JK">Jammu and Kashmir</option><option value="JH">Jharkhand</option><option value="KA">Karnataka</option><option value="KL">Kerala</option><option value="LA">Ladakh</option><option value="LD">Lakshadweep</option><option value="MP">Madhya Pradesh</option><option value="MH" selected>Maharashtra</option><option value="MN">Manipur</option><option value="ML">Meghalaya</option><option value="MZ">Mizoram</option><option value="NL">Nagaland</option><option value="OD">Odisha</option><option value="PY">Puducherry</option><option value="PB">Punjab</option><option value="RJ">Rajasthan</option><option value="SK">Sikkim</option><option value="TN">Tamil Nadu</option><option value="TS">Telangana</option><option value="TR">Tripura</option><option value="UP">Uttar Pradesh</option><option value="UK">Uttarakhand</option><option value="WB">West Bengal</option></select></div>
+      <div class="f"><label for="vn_terms">Payment terms</label><select id="vn_terms"><option value="">Zoho default</option><option value="0">Due on receipt</option><option value="7">7 days</option><option value="15">15 days</option><option value="30">30 days</option><option value="45">45 days</option></select></div>
+      <div class="f w2"><label for="vn_address">Address</label><input id="vn_address" maxlength="300"></div>
+      <div class="f"><label for="vn_city">City</label><input id="vn_city" maxlength="100"></div>
+      <div class="f"><label for="vn_pin">PIN code</label><input id="vn_pin" inputmode="numeric" maxlength="6"></div>
+    </div>
+    <h4 class="vsec">Vehicles of this vendor</h4>
+    <div class="grid"><div class="f w4"><label for="vn_vehicles">Vehicle numbers, separated by commas (optional)</label><input id="vn_vehicles" placeholder="MH14KA7788, MH12AB1234" autocapitalize="characters">
+      <small class="sub">LR Desk will fill this vendor by itself when one of these vehicles is typed.</small></div></div>
+    <div id="vendBank">
+    <h4 class="vsec">Bank account <small class="sub">(saved only in Zoho Books, never in the Google Sheet)</small></h4>
+    <div class="grid">
+      <div class="f w2"><label for="vn_holder">Account holder name</label><input id="vn_holder" maxlength="100"></div>
+      <div class="f w2"><label for="vn_bank">Bank name</label><input id="vn_bank" maxlength="100" placeholder="HDFC Bank"></div>
+      <div class="f"><label for="vn_acc">Account number</label><input id="vn_acc" inputmode="numeric" maxlength="18" autocomplete="off"></div>
+      <div class="f"><label for="vn_acc2">Account number again</label><input id="vn_acc2" inputmode="numeric" maxlength="18" autocomplete="off"></div>
+      <div class="f"><label for="vn_ifsc">IFSC</label><input id="vn_ifsc" maxlength="11" placeholder="HDFC0001234" autocapitalize="characters"></div>
+      <div class="f"><label for="vn_type">Account type</label><select id="vn_type"><option value="savings">Savings</option><option value="current">Current</option></select></div>
+    </div></div>
+    <div class="status" id="vendBankNote" hidden>Bank details can be added by an admin, here or in Zoho Books.</div>
+    </form>
+    <div class="status" id="vendMsg" role="status"></div>
+    <div class="modal-btns"><button class="btn ghost" id="vendClose" type="button">Cancel</button><button class="btn primary" id="vendSave" type="button">Create vendor in Zoho Books</button></div>
+  </div>
+</div>
 <div class="modal" id="payBox" hidden>
   <div class="modal-in wide" role="dialog" aria-labelledby="payTitle">
     <h3 id="payTitle">Owner payment</h3><div class="status" id="paySub"></div>
     <div id="payForm"></div>
     <div id="payZoho" class="zoho-box"></div>
     <div class="status" id="payNote"></div>
-    <div class="modal-btns"><button class="btn ghost" id="payClose" type="button">Close</button><button class="btn primary" id="paySave" type="button" disabled>Saved</button></div>
+    <div class="modal-btns"><button class="btn ghost" id="payNewVendor" type="button" style="margin-right:auto">+ New vendor</button><button class="btn ghost" id="payClose" type="button">Close</button><button class="btn primary" id="paySave" type="button" disabled>Saved</button></div>
   </div>
 </div>
 <div class="modal" id="plcBox" hidden>
@@ -1982,6 +2027,49 @@ $("payList").addEventListener("click",e=>{const r=e.target.closest("[data-pay]")
 $("payTabs").addEventListener("click",e=>{const b=e.target.closest("[data-pf]");if(b){payFilter=b.dataset.pf;renderPay()}});
 $("payQ").addEventListener("input",renderPay);
 $("vPay").onclick=()=>setMode("pay");
+
+/* ---------- New vendor: created in Zoho Books (bank details go only to Zoho) ---------- */
+const VN=["name","company","person","mobile","email","pan","gstin","address","city","pin","vehicles","holder","bank","acc","acc2","ifsc"];
+function vendOpen(prefill){
+  if(!settings.zoho){toast("Switch on Zoho Bills in Settings first; vendors are created in Zoho Books.");return}
+  VN.forEach(k=>$("vn_"+k).value="");$("vn_state").value="MH";$("vn_terms").value="";$("vn_type").value="savings";
+  if(prefill){["name","mobile","pan","vehicles"].forEach(k=>{if(prefill[k])$("vn_"+k).value=prefill[k]})}
+  $("vendBank").hidden=!isAdmin();$("vendBankNote").hidden=isAdmin();
+  $("vendMsg").textContent="";$("vendMsg").className="status";$("vendSave").disabled=false;$("vendSave").textContent="Create vendor in Zoho Books";
+  $("vendBox").hidden=false;$("vn_name").focus();
+}
+function vendClear(){["holder","bank","acc","acc2","ifsc"].forEach(k=>$("vn_"+k).value="")}
+function vendErr(m,id){const e=$("vendMsg");e.className="status dirty";e.textContent=m;if(id)$(id).focus();return false}
+function vendRead(){
+  const g=k=>$("vn_"+k).value.trim(),up=k=>{const v=g(k).toUpperCase().replace(/\s/g,"");$("vn_"+k).value=v;return v};
+  const v={name:g("name"),company:g("company"),person:g("person"),mobile:g("mobile"),email:g("email"),pan:up("pan"),gstin:up("gstin"),state:$("vn_state").value,terms:$("vn_terms").value,address:g("address"),city:g("city"),pin:g("pin"),vehicles:g("vehicles")};
+  if(v.name.length<3)return vendErr("Enter the vendor name.","vn_name");
+  if(v.pan&&!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.pan))return vendErr("PAN should look like ABCDE1234F.","vn_pan");
+  if(v.gstin&&!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/.test(v.gstin))return vendErr("GSTIN should be 15 characters, like 27ABCDE1234F1Z5.","vn_gstin");
+  if(v.mobile&&v.mobile.replace(/\D/g,"").slice(-10).length!==10)return vendErr("Mobile should be 10 digits.","vn_mobile");
+  if(v.pin&&!/^[1-9][0-9]{5}$/.test(v.pin))return vendErr("PIN code should be 6 digits.","vn_pin");
+  if(isAdmin()){const acc=g("acc").replace(/\s/g,""),acc2=g("acc2").replace(/\s/g,""),ifsc=up("ifsc"),holder=g("holder"),bank=g("bank");
+    if(acc||acc2||ifsc||holder||bank){
+      if(!holder)return vendErr("Enter the account holder name.","vn_holder");
+      if(!/^[0-9]{9,18}$/.test(acc))return vendErr("Bank account number should be 9 to 18 digits.","vn_acc");
+      if(acc!==acc2)return vendErr("The two account numbers do not match. Type the number again.","vn_acc2");
+      if(!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc))return vendErr("IFSC should be 11 characters, like HDFC0001234 (the fifth character is a zero).","vn_ifsc");
+      v.bank={holder,bankName:bank,acc,ifsc,type:$("vn_type").value}}}
+  return v;
+}
+$("vendSave").onclick=async()=>{
+  const v=vendRead();if(!v)return;const b=$("vendSave");b.disabled=true;b.textContent="Creating in Zoho Books…";$("vendMsg").textContent="";
+  try{const j=await api("vendorCreate",{v},90000);vendClear();
+    window._zohoVendors=window._zohoVendors||[];if(!window._zohoVendors.includes(j.vendor.name))window._zohoVendors.push(j.vendor.name);
+    (j.vehicles||[]).forEach(veh=>rememberVehicle({veh,owner:j.vendor.name,ownerMob:j.vendor.mobile,ownerPan:j.vendor.pan}));fillVendors();
+    if(pd&&!$("payBox").hidden&&!isOwn(pd)&&!((pd.zoho||{}).billId)){pd.owner=j.vendor.name;if(j.vendor.mobile)pd.ownerMob=j.vendor.mobile;if(j.vendor.pan)pd.ownerPan=j.vendor.pan;payRender()}
+    $("vendBox").hidden=true;
+    toast(`${j.vendor.name} created in Zoho Books`+(j.bank==="added"?" with bank account":j.bank?". Bank account not added: "+j.bank.replace(/^failed: /,"")+". Add it in Zoho Books (vendor > Bank Account Details)":"")+((j.vehicles||[]).length?`. ${j.vehicles.length} vehicle${j.vehicles.length>1?"s":""} linked`:""));
+  }catch(e){vendErr(e.message);b.disabled=false;b.textContent="Create vendor in Zoho Books"}
+};
+$("vendClose").onclick=()=>{vendClear();$("vendBox").hidden=true};
+$("bNewVendor").onclick=()=>vendOpen();
+$("payNewVendor").onclick=()=>vendOpen(pd?{name:isOwn(pd)||(pd.zoho||{}).billId?"":pd.owner,mobile:pd.ownerMob,pan:pd.ownerPan,vehicles:pd.veh}:null);
 /* ---------- Light / dark switch (Auto follows the device) ---------- */
 function applyTheme(){let t="auto";try{t=localStorage.getItem("lrTheme")||"auto"}catch(e){}
   if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
