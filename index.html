@@ -699,6 +699,9 @@ const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",r
 const PAY_F=[{k:"vehOwn",l:"Vehicle",type:"select",opts:["Market vehicle","Own vehicle"]},{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor",mkt:1},{k:"ownerMob",l:"Owner Mobile (WhatsApp)",type:"tel",mkt:1},{k:"ownerPan",l:"Owner PAN",up:1,mkt:1},
   {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"],mkt:1},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal",mkt:1},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal",mkt:1},
   {k:"podRcvd",l:"Stamped LR + invoice received",type:"select",opts:["No","Yes"]},{k:"podDate",l:"Received on",type:"date"}];
+// LRs before this date were paid outside LR Desk (Settings row 27). Older Sheet scripts do not send it, so 08-Nov-2026 is the default.
+const payFrom=()=>settings&&settings.payFrom!==undefined?settings.payFrom:"2026-11-08";
+const payOld=d=>!!payFrom()&&String(d.date||"")<payFrom()&&!((d.zoho||{}).billId);
 const isOwn=d=>!!d&&d.vehOwn==="Own vehicle";
 const blankLR=()=>({lrNo:"",date:today(),freight:"To Be Billed",vehOwn:"Market vehicle",hireType:"Fixed",podRcvd:"No",billTo:"Consignee",billState:"Maharashtra / 27",items:[blankItem()],cond:{}});
 
@@ -854,6 +857,7 @@ async function zohoCheck(quiet){if(!settings.zoho||!cur.lrNo||!(cur.zoho&&cur.zo
   try{const j=await api("zohoStatus",{lrNo:no},45000);if(j.zoho&&cur.lrNo===no){cur.zoho=j.zoho;const i=all.findIndex(d=>d.lrNo===no);if(i>=0)all[i].zoho=j.zoho;refreshZoho()}if(!quiet&&j.error)toast("Zoho Books: "+j.error)}catch(e){if(!quiet)toast(e.message)}}
 function payLinkHTML(){const z=cur.zoho||{},t=hireTotal(cur);
   if(!cur.lrNo)return `<div class="zh-msg">After you save this LR, add the vehicle owner, hire and payments in the <b>Payments</b> tab.${String(cur.owner||"").trim()?` Vendor from the placement or vehicle: <b>${esc(cur.owner)}</b>${t>0?", hire "+rs(t):""}.`:""}</div>`;
+  if(payOld(cur))return `<div class="zh-msg">Before ${esc(fd(payFrom()))}: the owner was paid outside LR Desk, so this LR is not in Payments.</div>`;
   if(isOwn(cur))return `<div class="zh-msg">Own vehicle, no owner payment. <button type="button" class="btn ghost sm" id="bPayOpen">Open in Payments</button></div>`;
   const st=z.billId?`${esc(cur.owner||"")} · Hire <b>${rs(z.total!==undefined?z.total:z.amount)}</b> · Paid <b>${rs(z.paid||0)}</b> · Balance <b>${rs(z.balance!==undefined?z.balance:z.amount)}</b>`:String(cur.owner||"").trim()?`${esc(cur.owner)}${t>0?" · Hire "+rs(t):""} · no Zoho bill yet`:"Vendor and hire not added yet";
   return `<div class="zh-msg">${st} <button type="button" class="btn ghost sm" id="bPayOpen">Open in Payments</button></div>`}
@@ -1454,7 +1458,7 @@ function dFiltered(){
     if(DF.bill&&billOf(d)!==DF.bill)return false;if(DF.cnor&&d.cnorName!==DF.cnor)return false;if(DF.cnee&&d.cneeName!==DF.cnee)return false;
     if(DF.status==="transit"&&d.delivered)return false;if(DF.status==="delivered"&&!d.delivered)return false;
     if(DF.freight&&d.freight!==DF.freight)return false;
-    if(DF.pay){const b=zBal(d),own=d.vehOwn==="Own vehicle";if(DF.pay==="own"?!own:own||(DF.pay==="nobill"?b!==null:DF.pay==="paid"?!(b===0):DF.pay==="due"?!(b>0):!(b>0&&d.podRcvd==="Yes")))return false}if(DF.by&&(d.createdByName||d.createdBy)!==DF.by)return false;
+    if(DF.pay){if(payOld(d))return false;const b=zBal(d),own=d.vehOwn==="Own vehicle";if(DF.pay==="own"?!own:own||(DF.pay==="nobill"?b!==null:DF.pay==="paid"?!(b===0):DF.pay==="due"?!(b>0):!(b>0&&d.podRcvd==="Yes")))return false}if(DF.by&&(d.createdByName||d.createdBy)!==DF.by)return false;
     if(q&&![d.lrNo,d.clientLrNo,d.owner,d.placementNo,d.veh,d.cnorName,d.cneeName,billOf(d),d.inv,d.dno,d.po,d.ewb,d.lp,d.dest].join(" ").toLowerCase().includes(q))return false;
     return true;
   });
@@ -1494,7 +1498,7 @@ function renderResults(){
       <td class="nw">${fd(d.date)}</td><td class="mono nw">${esc(d.veh)}</td><td>${esc(d.cnorName)}</td><td>${esc(d.cneeName)}</td><td>${esc(billOf(d))}</td><td class="nw">${esc(d.inv)}</td>
       <td class="r nw">${d.invVal?inr(d.invVal):""}</td><td class="r mono">${netOf(d)?netOf(d).toFixed(3):""}</td>
       <td>${d.delivered?`<span class="chip done sm">Delivered${d.deliveredOn?" "+fd(d.deliveredOn).slice(0,6):""}</span>`:`<span class="chip transit sm">In Transit</span>`}</td>
-      <td class="r nw">${(()=>{const z=d.zoho||{},b=zBal(d);if(d.vehOwn==="Own vehicle")return `<span class="sub">Own vehicle</span>`;if(b===null)return d.owner?`<span class="sub">${z.status==="error"?"Zoho error":"No bill"}</span>`:"";
+      <td class="r nw">${(()=>{const z=d.zoho||{},b=zBal(d);if(d.vehOwn==="Own vehicle")return `<span class="sub">Own vehicle</span>`;if(payOld(d))return "";if(b===null)return d.owner?`<span class="sub">${z.status==="error"?"Zoho error":"No bill"}</span>`:"";
         return (b===0?`<span class="chip done sm">Paid</span>`:`<b>${rs(b)}</b><div class="sub">${z.paid>0?"balance":"unpaid"}${d.podRcvd==="Yes"?" · stamped LR in":""}</div>`)})()}</td>
       <td class="nw">${esc(d.createdByName||d.createdBy||"")}</td>
       <td class="act nw"><button type="button" class="btn sm" data-open="${esc(d.lrNo)}">Open</button>${isClient(d)?"":`<button type="button" class="btn sm" data-pdf="${esc(d.lrNo)}">PDF</button>`}${d.delivered?"":`<button type="button" class="btn sm" data-dlv="${esc(d.lrNo)}">Delivered</button>`}</td></tr>`).join("")}</tbody></table>`
@@ -1908,7 +1912,7 @@ function payAck(d){const w=((d.zoho||{}).payWa||[]).filter(x=>x.to);const l=w[w.
 function renderPay(){
   if(!$("payList")||!unlocked)return;
   const q=($("payQ").value||"").trim().toLowerCase();
-  const base=all.filter(d=>d.lrNo&&!d.deleted);
+  const base=all.filter(d=>d.lrNo&&!d.deleted&&!payOld(d));
   const counts={};PAYF.forEach(([k])=>counts[k]=base.filter(d=>payInFilter(d,k)).length);
   {const bd=$("payBadge");if(bd){bd.textContent=counts.ready;bd.hidden=!counts.ready}}
   $("payTabs").innerHTML=PAYF.map(([k,l])=>`<button type="button" data-pf="${k}" aria-pressed="${k===payFilter}">${l}${k!=="all"&&counts[k]?` <em class="pill-n${k==="ready"?" red":""}">${counts[k]}</em>`:""}</button>`).join("");
