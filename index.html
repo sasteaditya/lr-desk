@@ -296,6 +296,7 @@ body[data-kind="client"] #bPrint,body[data-kind="client"] #bPdf{display:none}
 .vsec{margin:8px 0 0;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.vsec small{text-transform:none;letter-spacing:0;font-weight:400}
 #vendForm{display:flex;flex-direction:column;gap:10px}
 #vendBox{z-index:30}
+.vend-row{display:flex;gap:8px;align-items:center}.vend-row input{flex:1;min-width:0}.vend-row .btn{white-space:nowrap}
 .pays .d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .wa-b.att{min-width:220px}
 .wa-img{display:block;padding:0;border:0;background:none;cursor:zoom-in;border-radius:8px;overflow:hidden;margin-bottom:4px;max-width:260px}
@@ -593,6 +594,7 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
   <div class="modal-in wide" role="dialog" aria-labelledby="payTitle">
     <h3 id="payTitle">Owner payment</h3><div class="status" id="paySub"></div>
     <div id="payForm"></div>
+    <div class="status mkt" id="payVendNote"></div>
     <div id="payZoho" class="zoho-box"></div>
     <div class="status" id="payNote"></div>
     <div class="modal-btns"><button class="btn ghost" id="payNewVendor" type="button" style="margin-right:auto">+ New vendor</button><button class="btn ghost" id="payClose" type="button">Close</button><button class="btn primary" id="paySave" type="button" disabled>Saved</button></div>
@@ -620,9 +622,8 @@ body[data-mode="inbox"] .main,body[data-mode="inbox"] .tabs{display:none!importa
     <div class="pl-sec">Vehicle owner payment <span class="pl-hint">· not shared with parties; the Zoho Books bill is created with the first LR</span></div>
     <div class="grid">
       <div class="f"><label for="p_vehOwn">Vehicle</label><select id="p_vehOwn"><option>Market vehicle</option><option>Own vehicle</option></select></div>
-      <div class="f w2 mkt"><label for="p_owner">Vendor name (as in Zoho Books)</label><input id="p_owner" list="plDlVendor"><datalist id="plDlVendor"></datalist></div>
-      <div class="f mkt"><label for="p_ownerMob">Owner Mobile</label><input id="p_ownerMob" type="tel"></div>
-      <div class="f mkt"><label for="p_ownerPan">Owner PAN</label><input id="p_ownerPan"></div>
+      <div class="f w3 mkt"><label for="p_owner">Vendor (from Zoho Books)</label><div class="vend-row"><input id="p_owner" list="plDlVendor" placeholder="Start typing the vendor name"><datalist id="plDlVendor"></datalist><button type="button" class="btn ghost sm" id="plNewVendor">+ New vendor</button></div>
+        <small class="sub" id="plVendNote"></small><input id="p_ownerMob" type="hidden"><input id="p_ownerPan" type="hidden"></div>
       <div class="f mkt"><label for="p_hireType">Hire basis</label><select id="p_hireType"><option>Fixed</option><option>Per MT</option></select></div>
       <div class="f mkt"><label for="p_hireAmt">Hire amount (Rs.), if Fixed</label><input id="p_hireAmt" inputmode="decimal"></div>
       <div class="f mkt"><label for="p_hireRate">Rate per MT (Rs.), if Per MT</label><input id="p_hireRate" inputmode="decimal"></div>
@@ -741,7 +742,7 @@ const f3=v=>{const n=num(v);return n===null?"":n.toFixed(3)};
 const inr=v=>{const n=num(v);return n===null?"":n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})};
 const CONDS=["Tarpaulin Covered","Water Inside","Water Outside","Rusty Condition","White Rust","Coil / Packet Tampered","Edge Damage","Sample Received","Short Received","Other (see remarks)"];
 const blankItem=()=>({desc:"",code:"",pcs:"",gross:"",net:"",rpcs:"",rgross:"",rem:""});
-const PAY_F=[{k:"vehOwn",l:"Vehicle",type:"select",opts:["Market vehicle","Own vehicle"]},{k:"owner",l:"Vendor name (as in Zoho Books)",w:2,list:"dlVendor",mkt:1},{k:"ownerMob",l:"Owner Mobile (WhatsApp)",type:"tel",mkt:1},{k:"ownerPan",l:"Owner PAN",up:1,mkt:1},
+const PAY_F=[{k:"vehOwn",l:"Vehicle",type:"select",opts:["Market vehicle","Own vehicle"]},{k:"owner",l:"Vendor (from Zoho Books)",w:3,list:"dlVendor",mkt:1},{k:"ownerMob",hide:1},{k:"ownerPan",hide:1},
   {k:"hireType",l:"Hire basis",type:"select",opts:["Fixed","Per MT"],mkt:1},{k:"hireAmt",l:"Hire amount (Rs.), if Fixed",mode:"decimal",mkt:1},{k:"hireRate",l:"Rate per MT (Rs.), if Per MT",mode:"decimal",mkt:1},
   {k:"podRcvd",l:"Stamped LR + invoice received",type:"select",opts:["No","Yes"]},{k:"podDate",l:"Received on",type:"date"}];
 // LRs before this date were paid outside LR Desk (Settings row 27). Older Sheet scripts do not send it, so 08-Nov-2026 is the default.
@@ -1152,6 +1153,17 @@ $("codeIn").addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,""
 try{const em=localStorage.getItem("lrEmail");if(em)$("emailIn").value=em}catch(e){}
 function rememberVehicle(x){const k=String(x.veh||"").replace(/[^A-Za-z0-9]/g,"").toUpperCase();if(!k)return;if(x.vehOwn==="Own vehicle"){window._vehicles=window._vehicles||{};window._vehicles[k]=Object.assign({},window._vehicles[k]||{},{veh:x.veh,own:"Own vehicle"});return}if(!String(x.owner||"").trim())return;
   window._vehicles=window._vehicles||{};const o=window._vehicles[k]||{};window._vehicles[k]={veh:x.veh,owner:x.owner,mob:x.ownerMob||o.mob||"",pan:x.ownerPan||o.pan||"",hireType:x.hireType||o.hireType||"",own:"Market vehicle"};fillVendors()}
+// What LR Desk knows about a vendor name: Zoho Books first, then the vehicle register
+function vendorInfo(name){const low=String(name||"").trim().toLowerCase();if(!low)return null;
+  const z=(window._vendorInfo||{})[low];if(z)return{name:z.name,mobile:z.mobile||"",zoho:true};
+  if((window._zohoVendors||[]).some(n=>n.toLowerCase()===low))return{name:(window._zohoVendors.find(n=>n.toLowerCase()===low)),mobile:"",zoho:true};
+  const v=Object.values(window._vehicles||{}).find(x=>String(x.owner||"").toLowerCase()===low);return v?{name:v.owner,mobile:v.mob||"",pan:v.pan||"",zoho:false}:null}
+function vendorNote(name,own){
+  if(own)return"";const t=String(name||"").trim();if(!t)return settings.zoho?"Pick the vendor from the list. Not there? Use + New vendor.":"";
+  const i=vendorInfo(t);
+  if(i&&i.zoho)return `<span class="wa-ok">In Zoho Books</span>${i.mobile?` · WhatsApp ${esc("+91 "+i.mobile.slice(0,5)+" "+i.mobile.slice(5))}`:` · <span class="wa-q">no mobile in Zoho Books, so no payment WhatsApp</span>`}`;
+  if(!settings.zoho)return i&&i.mobile?`WhatsApp ${esc(i.mobile)}`:"";
+  return `<span class="wa-q">Not in Zoho Books yet.</span> Use + New vendor to create it with its details.`}
 function fillVendors(){const names=new Set([...(window._zohoVendors||[]),...Object.values(window._vehicles||{}).map(v=>v.owner)].filter(Boolean));
   const opts=[...names].sort((a,b)=>a.localeCompare(b)).map(n=>`<option value="${esc(n)}">`).join("");["dlVendor","plDlVendor"].forEach(id=>{const d=$(id);if(d)d.innerHTML=opts})}
 async function refresh(first,pre){
@@ -1161,7 +1173,7 @@ async function refresh(first,pre){
     if(j.settings)settings=j.settings;
     if(Array.isArray(j.parties))sharedParties=j.parties;
     if(Array.isArray(j.vehicles)){window._vehicles={};j.vehicles.forEach(v=>{window._vehicles[String(v.veh).replace(/[^A-Za-z0-9]/g,"").toUpperCase()]=v})}
-    fillVendors();if(settings.zoho&&!window._zohoVendors){window._zohoVendors=[];api("zohoVendors",{},45000).then(r=>{window._zohoVendors=r.vendors||[];fillVendors()}).catch(()=>{window._zohoVendors=null})}
+    fillVendors();if(settings.zoho&&!window._zohoVendors){window._zohoVendors=[];api("zohoVendors",{},45000).then(r=>{window._zohoVendors=r.vendors||[];window._vendorInfo=r.info||{};fillVendors()}).catch(()=>{window._zohoVendors=null})}
     if(Array.isArray(j.requests))requests=j.requests;
     if(Array.isArray(j.placements))placements=j.placements;
     listLoaded=true;
@@ -1743,7 +1755,7 @@ function openPlc(no){
   if(!unlocked){showLock("Sign in first.");return}
   plcEdit=no?placements.find(p=>p.no===no):null;
   let p=plcEdit||{placedOn:today(),billTo:"Consignee"};
-  PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)el.value=p[k]||""});if(!p.vehOwn)$("p_vehOwn").value="Market vehicle";plcOwn();renderCnors(plcCnors(p).map(c=>Object.assign({},c)));renderDrops(plcDrops(p).map(d=>Object.assign({},d)));
+  PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)el.value=p[k]||""});if(!p.vehOwn)$("p_vehOwn").value="Market vehicle";if(!p.hireType)$("p_hireType").value="Fixed";plcOwn();renderCnors(plcCnors(p).map(c=>Object.assign({},c)));renderDrops(plcDrops(p).map(d=>Object.assign({},d)));
   if(!p.placedOn)$("p_placedOn").value=today();
   setPlcBill(p.billTo||"Consignee");
   $("plTitle").textContent=plcEdit?`Edit placement ${plcEdit.no}`:"New vehicle placement";
@@ -1754,12 +1766,19 @@ $("plcBox").addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="p_veh"){const o=(window._vehicles||{})[t.value.replace(/[^A-Za-z0-9]/g,"").toUpperCase()];
     if(o&&o.own==="Own vehicle"){$("p_vehOwn").value="Own vehicle";plcOwn()}
-    else if(o&&!$("p_owner").value.trim()){$("p_owner").value=o.owner||"";$("p_ownerMob").value=o.mob||"";$("p_ownerPan").value=o.pan||"";if(o.hireType)$("p_hireType").value=o.hireType}}
+    else if(o&&!$("p_owner").value.trim()){$("p_owner").value=o.owner||"";$("p_ownerMob").value=o.mob||"";$("p_ownerPan").value=o.pan||"";if(o.hireType)$("p_hireType").value=o.hireType;plcVend()}}
   if(t.id==="p_veh"){const p=t.selectionStart;t.value=t.value.toUpperCase();try{t.setSelectionRange(p,p)}catch(_){}}
   if(t.id==="p_billName"){const party=window._parties?.get(t.value.trim().toLowerCase());if(party&&t.value.trim()){if(party.email)$("p_billEmail").value=party.email;if(party.mob)$("p_billMob").value=party.mob}}
   plcNote();
 });
-function plcOwn(){$("plcBox").classList.toggle("own-veh",$("p_vehOwn").value==="Own vehicle")}
+function plcOwn(){$("plcBox").classList.toggle("own-veh",$("p_vehOwn").value==="Own vehicle");plcVend()}
+// Vendor picked: its mobile comes from Zoho Books by itself
+function plcVend(typed){const own=$("p_vehOwn").value==="Own vehicle",i=vendorInfo($("p_owner").value);
+  if(typed||!$("p_ownerMob").value){if(i){$("p_ownerMob").value=i.mobile||"";if(i.pan)$("p_ownerPan").value=i.pan}else if(typed){$("p_ownerMob").value="";$("p_ownerPan").value=""}}
+  $("plVendNote").innerHTML=vendorNote($("p_owner").value,own)}
+$("p_owner").addEventListener("input",()=>plcVend(true));
+$("p_owner").addEventListener("change",()=>{const i=vendorInfo($("p_owner").value);if(i&&i.name)$("p_owner").value=i.name});
+$("plNewVendor").onclick=()=>vendOpen({name:vendorInfo($("p_owner").value)?"":$("p_owner").value.trim(),vehicles:$("p_veh").value.trim()},v=>{$("p_owner").value=v.name;$("p_ownerMob").value=v.mobile||"";$("p_ownerPan").value=v.pan||"";plcVend()});
 $("plcBox").addEventListener("change",e=>{if(e.target.id==="p_vehOwn")plcOwn()});
 $("plCancel").onclick=()=>{$("plcBox").hidden=true};
 $("plcBox").addEventListener("click",e=>{if(e.target===$("plcBox"))$("plcBox").hidden=true});
@@ -1979,17 +1998,18 @@ function renderPay(){
     :`<div class="empty">${base.length?"No LRs here.":"No LRs yet."}</div>`;
 }
 function payFieldHTML(x){
+  if(x.hide)return"";
   const v=esc(pd[x.k]||""),id="pay_"+x.k,locked=x.mkt&&!isAdmin()&&(pd.zoho||{}).billId&&x.k!=="vehOwn"||(x.k==="vehOwn"&&!isAdmin()&&(pd.zoho||{}).billId);
   const input=x.type==="select"?`<select id="${id}" data-pk="${x.k}"${locked?" disabled":""}>${x.opts.map(o=>`<option${o===(pd[x.k]||x.opts[0])?" selected":""}>${o}</option>`).join("")}</select>`
     :`<input id="${id}" data-pk="${x.k}" type="${x.type||"text"}" value="${v}"${x.list?` list="${x.list}"`:""}${x.mode?` inputmode="${x.mode}"`:""}${locked?" readonly":""}>`;
-  return `<div class="f${x.w===2?" w2":""}${x.mkt?" mkt":""}"><label for="${id}">${x.l}</label>${input}</div>`;
+  return `<div class="f${x.w===2?" w2":x.w===3?" w3":""}${x.mkt?" mkt":""}"><label for="${id}">${x.l}</label>${input}</div>`;
 }
 function payRender(){
   const d=pd;$("payTitle").textContent=`Owner payment · ${d.lrNo}`;
   $("paySub").textContent=[d.veh,fd(d.date),[d.cnorName||d.lp,d.cneeName||d.dest].filter(Boolean).join(" to "),totals(d).n?totals(d).n.toFixed(3)+" MT":""].filter(Boolean).join(" · ");
   $("payForm").innerHTML=`<div class="grid">${PAY_F.map(payFieldHTML).join("")}</div>`;
   $("payBox").querySelector(".modal-in").classList.toggle("own-veh",isOwn(d));
-  $("payZoho").innerHTML=zohoHTML(d);
+  $("payZoho").innerHTML=zohoHTML(d);$("payVendNote").innerHTML=vendorNote(d.owner,isOwn(d));
   const ch=JSON.stringify(PAY_F.map(x=>d[x.k]||""))!==JSON.stringify(PAY_F.map(x=>payOrig[x.k]||""));
   $("paySave").textContent=ch?"Save":"Saved";$("paySave").disabled=!ch;
   $("payNote").textContent=(d.zoho||{}).billId&&!isAdmin()?"The Zoho bill is made, so only an admin can change the vendor or hire. You can mark the stamped LR.":"";
@@ -2005,6 +2025,7 @@ async function openPay(no){
 }
 function payStore(no,patch){const i=all.findIndex(x=>x.lrNo===no);if(i>=0)Object.assign(all[i],patch);if(cur.lrNo===no){Object.assign(cur,patch);refreshZoho()}}
 $("payForm").addEventListener("input",e=>{const k=e.target.dataset.pk;if(!k)return;let v=e.target.value;if(k==="ownerPan"){v=v.toUpperCase();e.target.value=v}pd[k]=v;
+  if(k==="owner"){const i=vendorInfo(v);pd.ownerMob=i?i.mobile||"":"";pd.ownerPan=i&&i.pan?i.pan:"";$("payVendNote").innerHTML=vendorNote(v,isOwn(pd))}
   if(k==="vehOwn"||k==="podRcvd"){if(k==="podRcvd"&&v==="Yes"&&!pd.podDate){pd.podDate=new Date().toISOString().slice(0,10)}payRender();return}
   $("payZoho").innerHTML=zohoHTML(pd);const ch=JSON.stringify(PAY_F.map(x=>pd[x.k]||""))!==JSON.stringify(PAY_F.map(x=>payOrig[x.k]||""));$("paySave").textContent=ch?"Save":"Saved";$("paySave").disabled=!ch});
 $("paySave").onclick=async()=>{const b=$("paySave");b.disabled=true;b.textContent="Saving…";
@@ -2026,11 +2047,13 @@ $("payBox").addEventListener("click",e=>{if(e.target===$("payBox"))$("payClose")
 $("payList").addEventListener("click",e=>{const r=e.target.closest("[data-pay]");if(r)openPay(r.dataset.pay)});
 $("payTabs").addEventListener("click",e=>{const b=e.target.closest("[data-pf]");if(b){payFilter=b.dataset.pf;renderPay()}});
 $("payQ").addEventListener("input",renderPay);
+$("payForm").addEventListener("change",e=>{if(e.target.dataset.pk==="owner"){const i=vendorInfo(e.target.value);if(i&&i.name&&i.name!==e.target.value){e.target.value=i.name;pd.owner=i.name}}});
 $("vPay").onclick=()=>setMode("pay");
 
 /* ---------- New vendor: created in Zoho Books (bank details go only to Zoho) ---------- */
 const VN=["name","company","person","mobile","email","pan","gstin","address","city","pin","vehicles","holder","bank","acc","acc2","ifsc"];
-function vendOpen(prefill){
+let vendDone=null;
+function vendOpen(prefill,done){vendDone=done||null;
   if(!settings.zoho){toast("Switch on Zoho Bills in Settings first; vendors are created in Zoho Books.");return}
   VN.forEach(k=>$("vn_"+k).value="");$("vn_state").value="MH";$("vn_terms").value="";$("vn_type").value="savings";
   if(prefill){["name","mobile","pan","vehicles"].forEach(k=>{if(prefill[k])$("vn_"+k).value=prefill[k]})}
@@ -2062,14 +2085,16 @@ $("vendSave").onclick=async()=>{
   try{const j=await api("vendorCreate",{v},90000);vendClear();
     window._zohoVendors=window._zohoVendors||[];if(!window._zohoVendors.includes(j.vendor.name))window._zohoVendors.push(j.vendor.name);
     (j.vehicles||[]).forEach(veh=>rememberVehicle({veh,owner:j.vendor.name,ownerMob:j.vendor.mobile,ownerPan:j.vendor.pan}));fillVendors();
-    if(pd&&!$("payBox").hidden&&!isOwn(pd)&&!((pd.zoho||{}).billId)){pd.owner=j.vendor.name;if(j.vendor.mobile)pd.ownerMob=j.vendor.mobile;if(j.vendor.pan)pd.ownerPan=j.vendor.pan;payRender()}
+    window._vendorInfo=window._vendorInfo||{};window._vendorInfo[j.vendor.name.toLowerCase()]={name:j.vendor.name,mobile:j.vendor.mobile||""};
+    if(vendDone){try{vendDone(j.vendor)}catch(e){}}
+    else if(pd&&!$("payBox").hidden&&!isOwn(pd)&&!((pd.zoho||{}).billId)){pd.owner=j.vendor.name;pd.ownerMob=j.vendor.mobile||"";pd.ownerPan=j.vendor.pan||"";payRender()}
     $("vendBox").hidden=true;
     toast(`${j.vendor.name} created in Zoho Books`+(j.bank==="added"?" with bank account":j.bank?". Bank account not added: "+j.bank.replace(/^failed: /,"")+". Add it in Zoho Books (vendor > Bank Account Details)":"")+((j.vehicles||[]).length?`. ${j.vehicles.length} vehicle${j.vehicles.length>1?"s":""} linked`:""));
   }catch(e){vendErr(e.message);b.disabled=false;b.textContent="Create vendor in Zoho Books"}
 };
 $("vendClose").onclick=()=>{vendClear();$("vendBox").hidden=true};
 $("bNewVendor").onclick=()=>vendOpen();
-$("payNewVendor").onclick=()=>vendOpen(pd?{name:isOwn(pd)||(pd.zoho||{}).billId?"":pd.owner,mobile:pd.ownerMob,pan:pd.ownerPan,vehicles:pd.veh}:null);
+$("payNewVendor").onclick=()=>vendOpen(pd?{name:isOwn(pd)||(pd.zoho||{}).billId||vendorInfo(pd.owner)?"":pd.owner,vehicles:pd.veh}:null);
 /* ---------- Light / dark switch (Auto follows the device) ---------- */
 function applyTheme(){let t="auto";try{t=localStorage.getItem("lrTheme")||"auto"}catch(e){}
   if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
