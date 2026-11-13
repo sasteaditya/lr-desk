@@ -1283,7 +1283,7 @@ async function sendEmail(list,cc,auto,wa){
 }
 $("bEmail").onclick=async()=>{if(!(await ensureSaved()))return;if(isClient(cur)){driverTrip(false);return}openEmail()};
 $("emCancel").onclick=()=>{$("emailBox").hidden=true};
-$("emailBox").addEventListener("click",e=>{if(e.target===$("emailBox"))$("emailBox").hidden=true});
+
 $("emSend").onclick=async()=>{
   const list=recipients(),wa=settings.wa?waRecipients():[],cc=$("emCc").checked&&!!settings.cc&&(list.length>0||!wa.length);
   const n=$("emNote");$("emSend").disabled=true;n.className="status";n.textContent="Preparing PDF and sending…";
@@ -1458,7 +1458,7 @@ function openRequest(type){
   $("reqBox")._body=body;
 }
 $("rqCancelBtn").onclick=()=>{$("reqBox").hidden=true};
-$("reqBox").addEventListener("click",e=>{if(e.target===$("reqBox"))$("reqBox").hidden=true});
+
 $("rqSend").onclick=async()=>{
   const reason=$("rqReason").value.trim();if(!reason){$("rqNote").textContent="Please write a short reason, for example \"Wrong invoice number\".";$("rqReason").focus();return}
   $("rqSend").disabled=true;$("rqNote").textContent="Sending to admin…";
@@ -1760,7 +1760,7 @@ function openPlc(no){
   setPlcBill(p.billTo||"Consignee");
   $("plTitle").textContent=plcEdit?`Edit placement ${plcEdit.no}`:"New vehicle placement";
   $("plSave").textContent=plcEdit?"Save changes":"Place vehicle";
-  $("plErr").textContent="";$("plcBox").hidden=false;setTimeout(()=>$("p_veh").focus(),30);plcNote();
+  $("plErr").textContent="";$("plcBox").hidden=false;setTimeout(()=>$("p_veh").focus(),30);plcNote();plcWarned=false;plcSnap=plcState();
 }
 $("plcBox").addEventListener("input",e=>{
   const t=e.target;
@@ -1780,8 +1780,11 @@ $("p_owner").addEventListener("input",()=>plcVend(true));
 $("p_owner").addEventListener("change",()=>{const i=vendorInfo($("p_owner").value);if(i&&i.name)$("p_owner").value=i.name});
 $("plNewVendor").onclick=()=>vendOpen({name:vendorInfo($("p_owner").value)?"":$("p_owner").value.trim(),vehicles:$("p_veh").value.trim()},v=>{$("p_owner").value=v.name;$("p_ownerMob").value=v.mobile||"";$("p_ownerPan").value=v.pan||"";plcVend()});
 $("plcBox").addEventListener("change",e=>{if(e.target.id==="p_vehOwn")plcOwn()});
-$("plCancel").onclick=()=>{$("plcBox").hidden=true};
-$("plcBox").addEventListener("click",e=>{if(e.target===$("plcBox"))$("plcBox").hidden=true});
+let plcSnap="",plcWarned=false;
+function plcState(){return JSON.stringify([...$("plcBox").querySelectorAll("input,select,textarea")].map(e=>e.type==="checkbox"?e.checked:e.value))}
+$("plCancel").onclick=()=>{if(plcState()!==plcSnap&&!plcWarned){plcWarned=true;$("plErr").textContent="You have typed details here. Click Close again to discard them, or Place vehicle to save.";return}$("plcBox").hidden=true};
+$("plcBox").addEventListener("input",()=>{if(plcWarned){plcWarned=false;$("plErr").textContent=""}});
+// A click outside the box no longer closes it, so typed details are never lost by accident
 $("plSave").onclick=async()=>{
   const p=Object.assign({},plcEdit||{});PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)p[k]=el.value.trim()});p.billTo=$("plBillTo").dataset.v;
   p.consignors=readCnors().filter(c=>c.name);
@@ -1846,7 +1849,7 @@ function openCancel(no){
   document.querySelectorAll('input[name="pcR"]').forEach(r=>r.checked=false);$("pcReason").value="";$("pcReason").hidden=true;$("pcErr").textContent="";$("pcBox").hidden=false;
 }
 $("pcClose").onclick=()=>{$("pcBox").hidden=true};
-$("pcBox").addEventListener("click",e=>{if(e.target===$("pcBox"))$("pcBox").hidden=true});
+
 $("pcGo").onclick=async()=>{
   const pick=(document.querySelector('input[name="pcR"]:checked')||{}).value||"";
   const reason=pick==="other"?$("pcReason").value.trim():pick;
@@ -2043,7 +2046,7 @@ $("payZoho").addEventListener("click",async e=>{const b=e.target.closest("button
     $("payZoho").innerHTML=zohoHTML(pd);renderPay()}});
 $("payClose").onclick=()=>{if(!$("paySave").disabled&&!confirmClose())return;$("payBox").hidden=true;pd=null};
 function confirmClose(){const n=$("payNote");if(n.dataset.warn==="1"){n.dataset.warn="";return true}n.dataset.warn="1";n.textContent="You have unsaved changes. Click Close again to discard them.";return false}
-$("payBox").addEventListener("click",e=>{if(e.target===$("payBox"))$("payClose").click()});
+
 $("payList").addEventListener("click",e=>{const r=e.target.closest("[data-pay]");if(r)openPay(r.dataset.pay)});
 $("payTabs").addEventListener("click",e=>{const b=e.target.closest("[data-pf]");if(b){payFilter=b.dataset.pf;renderPay()}});
 $("payQ").addEventListener("input",renderPay);
