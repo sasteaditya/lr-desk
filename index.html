@@ -495,6 +495,7 @@ body[data-mode="book"] .main{display:none!important}
 .pod-l{font-weight:700;font-size:13px;margin-right:4px}
 .pod-box .sub{font-size:12px;color:var(--muted)}
 .pc-drop a.btn{text-decoration:none}
+body:not([data-bookmgr="yes"]) .book-only{display:none!important}
 @media (max-width:1399px) and (min-width:1101px){.nav button{padding:8px 9px;font-size:13px;gap:6px}}
 @media (max-width:560px){.nav{overflow-x:auto;scrollbar-width:none;justify-content:flex-start}.nav::-webkit-scrollbar{display:none}.nav button{flex:1 0 auto;min-width:48px;padding:6px 5px}#custForm .grid{grid-template-columns:minmax(0,1fr)}.cu-row{flex-direction:column;align-items:stretch}.cu-btns{justify-content:flex-start}}
 
@@ -564,7 +565,7 @@ body[data-mode="book"] .main{display:none!important}
 </section>
 <section class="bks" id="bks">
   <div class="d-head"><div><h1>Customer bookings</h1><div class="status">Vehicles your customers book on the customer portal. Place a vehicle for each booking, or accept or decline it.</div></div>
-    <button type="button" class="btn admin-only" id="bCustomers">Customers</button></div>
+    <button type="button" class="btn book-only" id="bCustomers">Customers</button></div>
   <div class="pl-bar"><div class="seg" id="bkTabs" role="group" aria-label="Filter bookings"><button type="button" data-f="open" aria-pressed="true">Open</button><button type="button" data-f="placed" aria-pressed="false">Vehicle placed</button><button type="button" data-f="closed" aria-pressed="false">Declined / cancelled</button><button type="button" data-f="all" aria-pressed="false">All</button></div>
     <input id="bkQ" type="search" placeholder="Search booking, company, place, vehicle…" aria-label="Search bookings"></div>
   <div class="pl-list" id="bkList"></div>
@@ -1205,14 +1206,14 @@ async function startSession(j){
   me=j.user;settings=j.settings||settings;SIGN=j.sign||"";unlocked=true;
   $("lock").hidden=true;$("who").textContent=`${me.name||me.email} · ${me.role||"Staff"}`;$("who").title=me.email;
   $("avatar").textContent=(me.name||me.email||"?").trim().charAt(0).toUpperCase();
-  document.body.dataset.role=me.role||"Staff";status();renderReqBadge();
+  document.body.dataset.role=me.role||"Staff";document.body.dataset.bookmgr=canBook()?"yes":"no";status();renderReqBadge();
   await refresh(true,j.lrs?j:null);
   setMode("plc");if(bkPending&&settings.bookings){setMode("book");loadBookings(true)}
   if(j.cached)api("list").then(f=>{if(!unlocked)return;if(f.user)me=f.user;if(f.sign)SIGN=f.sign;refresh(false,f)}).catch(e=>{if(e.code!=="auth")toast("Showing the data saved on this device. "+e.message)});
 }
 
 function signOut(msg){
-  token="";me=null;unlocked=false;SIGN="";all=[];listLoaded=false;sharedParties=[];requests=[];placements=[];bookings=[];copyQ.length=0;$("vBook").hidden=true;$("custBox").hidden=true;document.body.dataset.mode="plc";["vBook","vForm","vPlc","vPay","vDash","vReq","vInbox"].forEach(id=>$(id).setAttribute("aria-pressed",String(id==="vPlc")));waData={msgs:[],names:{}};waSel=null;
+  token="";me=null;unlocked=false;SIGN="";all=[];listLoaded=false;sharedParties=[];requests=[];placements=[];bookings=[];copyQ.length=0;$("vBook").hidden=true;$("custBox").hidden=true;document.body.dataset.bookmgr="no";document.body.dataset.mode="plc";["vBook","vForm","vPlc","vPay","vDash","vReq","vInbox"].forEach(id=>$(id).setAttribute("aria-pressed",String(id==="vPlc")));waData={msgs:[],names:{}};waSel=null;
   try{localStorage.removeItem("lrToken");localStorage.removeItem(CACHE_KEY)}catch(e){}
   $("who").textContent="";renderList();status();schedule();
   $("sentTo").textContent="";$("codeIn").value="";
@@ -1250,6 +1251,7 @@ async function refresh(first,pre){
     if(Array.isArray(j.requests))requests=j.requests;
     if(Array.isArray(j.placements))placements=j.placements;
     if(Array.isArray(j.bookings))bookings=j.bookings;
+    if(j.user&&me&&j.user.email===me.email){me.bookMgr=!!j.user.bookMgr;document.body.dataset.bookmgr=canBook()?"yes":"no"}
     listLoaded=true;
     fillLists();renderList();
     if(first&&!dirty&&all.length)load(all[0]);
@@ -2200,6 +2202,8 @@ applyTheme();
 /* ===================== Customer bookings (from the customer portal) ===================== */
 let bookings=[],bkFilter="open",plcBooking=null,bkPending=null,bkLast=0,custList=null,custEdit=null,custSnap="",custWarned=false;
 const BK_OPEN=["Requested","Accepted","Partly placed"];
+// Admins, and Staff with Bookings = Yes in the Users tab, handle bookings fully (decline, customers)
+const canBook=()=>isAdmin()||!!(me&&me.bookMgr);
 // Same company written differently ("M/s ABC Pvt. Ltd." and "ABC Private Limited") gives the same key (as in the Sheet script)
 const bkKey=s=>String(s||"").toLowerCase().replace(/^\s*(m\/s\.?|messrs\.?)\s*/,"").replace(/&/g," and ").replace(/\bprivate\b/g,"pvt").replace(/\blimited\b/g,"ltd").replace(/\bcompany\b/g,"co").replace(/[^a-z0-9]/g,"");
 const bkPan=g=>{g=String(g||"").toUpperCase().replace(/[^0-9A-Z]/g,"");return /^\d{2}[A-Z]{5}\d{4}[A-Z][0-9A-Z]{3}$/.test(g)?g.slice(2,12):""};
@@ -2242,7 +2246,7 @@ function bkCard(b){
     ${b.status==="Declined"?`<div class="pc-mail">Declined${b.declinedBy?" by "+esc(b.declinedBy):""}${b.declinedAt?" "+esc(b.declinedAt):""}: ${esc(b.declineReason||"")}</div>`:""}
     ${b.status==="Cancelled"?`<div class="pc-mail">Cancelled by the customer${b.cancelledAt?" "+esc(b.cancelledAt):""}${b.cancelReason?": "+esc(b.cancelReason):""}</div>`:""}
     ${log?`<details class="bk-log"><summary>History</summary><ul>${log}</ul></details>`:""}
-    ${open?`<div class="pc-act"><button type="button" class="btn primary" data-bkplace="${esc(b.no)}">Place vehicle${b.vehicles>1?` (${Math.min(live.length+1,b.vehicles)} of ${b.vehicles})`:""}</button>${b.status==="Requested"?`<button type="button" class="btn" data-bkact="accept" data-no="${esc(b.no)}">Accept</button>`:""}${b.status==="Partly placed"?`<button type="button" class="btn ghost" data-bkact="done" data-no="${esc(b.no)}">Mark complete</button>`:""}${isAdmin()&&!live.length?`<button type="button" class="btn ghost danger" data-bkdecl="${esc(b.no)}">Decline</button>`:""}</div>
+    ${open?`<div class="pc-act"><button type="button" class="btn primary" data-bkplace="${esc(b.no)}">Place vehicle${b.vehicles>1?` (${Math.min(live.length+1,b.vehicles)} of ${b.vehicles})`:""}</button>${b.status==="Requested"?`<button type="button" class="btn" data-bkact="accept" data-no="${esc(b.no)}">Accept</button>`:""}${b.status==="Partly placed"?`<button type="button" class="btn ghost" data-bkact="done" data-no="${esc(b.no)}">Mark complete</button>`:""}${canBook()&&!live.length?`<button type="button" class="btn ghost danger" data-bkdecl="${esc(b.no)}">Decline</button>`:""}</div>
       <div class="rq-act" id="bkd-${esc(b.no)}" hidden><input type="text" maxlength="300" placeholder="Reason for the customer (they will see it)" aria-label="Reason for declining" data-bkreason="${esc(b.no)}"><button type="button" class="btn danger-bg" data-bkact="decline" data-no="${esc(b.no)}">Decline booking</button></div>`:""}
   </article>`;
 }
