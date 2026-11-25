@@ -496,6 +496,14 @@ body[data-mode="book"] .main{display:none!important}
 .pod-box .sub{font-size:12px;color:var(--muted)}
 .pc-drop a.btn{text-decoration:none}
 body:not([data-bookmgr="yes"]) .book-only{display:none!important}
+.pc-mgr,.stat-mgr{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:13px;color:var(--muted)}
+.pc-mgr b,.stat-mgr b{color:var(--ink);font-weight:600}
+.stat-mgr{margin-top:8px}
+.mgr-list{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto;margin:10px 0}
+.mgr-row{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;cursor:pointer;background:var(--field);overflow-wrap:anywhere}
+.mgr-row input{width:18px;height:18px;flex:none}
+.mgr-row small{color:var(--muted)}
+#plMgr{border:1px solid var(--line);background:var(--field);border-radius:8px;padding:8px 10px;max-width:220px}
 @media (max-width:1399px) and (min-width:1101px){.nav button{padding:8px 9px;font-size:13px;gap:6px}}
 @media (max-width:560px){.nav{overflow-x:auto;scrollbar-width:none;justify-content:flex-start}.nav::-webkit-scrollbar{display:none}.nav button{flex:1 0 auto;min-width:48px;padding:6px 5px}#custForm .grid{grid-template-columns:minmax(0,1fr)}.cu-row{flex-direction:column;align-items:stretch}.cu-btns{justify-content:flex-start}}
 
@@ -574,7 +582,7 @@ body:not([data-bookmgr="yes"]) .book-only{display:none!important}
   <div class="d-head"><div><h1>Vehicle placements</h1><div class="status">Place a vehicle for an order, inform the party, then issue the LR after loading.</div></div>
     <button type="button" class="btn primary" id="bNewPlc">+ New placement</button></div>
   <div class="pl-bar"><div class="seg" id="plTabs" role="group" aria-label="Filter placements"><button type="button" data-f="open" aria-pressed="true">Vehicle placed</button><button type="button" data-f="issued" aria-pressed="false">LR issued</button><button type="button" data-f="cancelled" aria-pressed="false">Cancelled</button><button type="button" data-f="all" aria-pressed="false">All</button></div>
-    <input id="plQ" type="search" placeholder="Search placement no., vehicle, party, driver…" aria-label="Search placements"></div>
+    <input id="plQ" type="search" placeholder="Search placement no., vehicle, party, driver…" aria-label="Search placements"><select id="plMgr" class="admin-only" aria-label="Show the trips of" hidden><option value="">All managers</option></select></div>
   <div class="pl-list" id="plList"></div>
 </section>
 <section class="pays" id="pays">
@@ -670,6 +678,15 @@ body:not([data-bookmgr="yes"]) .book-only{display:none!important}
     </div>
     <div class="status dirty" id="custErr" role="status"></div>
     <div class="modal-btns"><button class="btn ghost" id="custClose" type="button">Close</button><button class="btn ghost" id="custBack" type="button" hidden>Back to list</button><button class="btn" id="custAdd" type="button">+ Add customer</button><button class="btn primary" id="custSave" type="button" hidden>Save</button></div>
+  </div>
+</div>
+<div class="modal" id="mgrBox" hidden>
+  <div class="modal-in" role="dialog" aria-labelledby="mgrTitle">
+    <h3 id="mgrTitle">Who manages this trip</h3>
+    <div class="status" id="mgrSub"></div>
+    <div id="mgrList" class="mgr-list"></div>
+    <div class="status dirty" id="mgrErr" role="status"></div>
+    <div class="modal-btns"><button class="btn ghost" id="mgrClose" type="button">Cancel</button><button class="btn primary" id="mgrSave" type="button">Save managers</button></div>
   </div>
 </div>
 <div class="modal" id="plcBox" hidden>
@@ -865,6 +882,7 @@ const rs=v=>"Rs. "+(Number(v)||0).toLocaleString("en-IN",{maximumFractionDigits:
 function nextNo(){
   const cl=isClient(cur),p=cl?(settings.tripPrefix||"ATT"):(settings.prefix||"ALF");let max=cl?0:(parseInt(settings.start)||1)-1;
   all.forEach(d=>{if(d.lrNo&&d.lrNo.startsWith(p)){const k=parseInt(d.lrNo.slice(p.length));if(!isNaN(k)&&k>max)max=k}});
+  {const sv=nextNos&&nextNos[cl?"trip":"lr"];if(sv&&String(sv).startsWith(p)){const k=parseInt(String(sv).slice(p.length))-1;if(!isNaN(k)&&k>max)max=k}}   // staff do not see every LR
   return p+String(max+1).padStart(5,"0");
 }
 
@@ -1124,7 +1142,7 @@ window.addEventListener("beforeunload",e=>{if(bgN){e.preventDefault();e.returnVa
 /* Last list kept on this device, so LR Desk opens instantly; the fresh list loads right after */
 const CACHE_KEY="lrCache1";
 function saveCache(j){try{if(!me)return;localStorage.setItem(CACHE_KEY,JSON.stringify({email:me.email,at:Date.now(),user:me,sign:SIGN,settings,
-  lrs:all.slice(0,400),placements:(placements||[]).slice(0,300),parties:sharedParties,vehicles:j&&j.vehicles||[],requests:requests||[],bookings:(bookings||[]).slice(0,200)}))}catch(e){try{localStorage.removeItem(CACHE_KEY)}catch(_){}}}
+  lrs:all.slice(0,400),placements:(placements||[]).slice(0,300),parties:sharedParties,vehicles:j&&j.vehicles||[],requests:requests||[],bookings:(bookings||[]).slice(0,200),team:team||[],nextNos:nextNos||null}))}catch(e){try{localStorage.removeItem(CACHE_KEY)}catch(_){}}}
 function readCache(){try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");return c&&c.user&&c.user.email&&Date.now()-c.at<30*86400000?c:null}catch(e){return null}}
 function busy(on,label){["bSave","bPdf","bPrint","bEmail"].forEach(id=>$(id).disabled=on);if(label)$("bPdf").textContent=on?label:"Download PDF"}
 
@@ -1252,6 +1270,7 @@ async function refresh(first,pre){
     if(Array.isArray(j.placements))placements=j.placements;
     if(Array.isArray(j.bookings))bookings=j.bookings;
     if(j.user&&me&&j.user.email===me.email){me.bookMgr=!!j.user.bookMgr;document.body.dataset.bookmgr=canBook()?"yes":"no"}
+    if(Array.isArray(j.team))team=j.team;if(j.nextNos)nextNos=j.nextNos;fillMgrFilter();
     listLoaded=true;
     fillLists();renderList();
     if(first&&!dirty&&all.length)load(all[0]);
@@ -1406,7 +1425,7 @@ function newLR(from){
 
 /* ---------- Delivery status ---------- */
 function billEmails(L){return splitEmails(bill(L).email).filter(okEmail)}
-function statusHTML(){
+function statusHTML0(){
   if(!cur.lrNo)return `<div class="stat-row"><span class="chip draft">Not saved</span><span class="status">Save the LR first. Its status starts as In Transit.</span></div>`;
   if(cur.delivered)return `<div class="stat-row"><span class="chip done">Delivered${cur.deliveredOn?" · "+fd(cur.deliveredOn):""}</span>
     <span class="status" id="statNote">${cur.deliveryEmailedAt?`Delivery email sent ${esc(cur.deliveryEmailedAt)}${cur.deliveryEmailedTo?" to "+esc(cur.deliveryEmailedTo):""}.`:"No delivery email was sent."}</span>
@@ -1775,6 +1794,7 @@ function renderPlc(){
   if(document.body.dataset.mode!=="plc")return;
   const q=($("plQ").value||"").trim().toLowerCase();
   const list=placements.filter(p=>(plcFilter==="all")||(plcFilter==="open"&&(p.status==="Vehicle Placed"||p.status==="Partly Issued"))||(plcFilter==="issued"&&p.status==="LR Issued")||(plcFilter==="cancelled"&&p.status==="Cancelled"))
+    .filter(p=>!plcMgrF||(p.managers||[]).includes(plcMgrF))
     .filter(p=>!q||[p.no,p.veh,p.driver,p.driverMob,plcCnors(p).map(x=>x.name+" "+(x.lp||"")).join(" "),plcDrops(p).map(x=>x.name+" "+x.dest).join(" "),plcBillName(p),p.lrNo].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   document.querySelectorAll("#plTabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===plcFilter)));
@@ -1785,6 +1805,7 @@ function renderPlc(){
     <div class="pc-meta">${[p.vehType,p.capacity?p.capacity+" MT":"",p.driver?`Driver ${esc(p.driver)}${p.driverMob?" · "+esc(p.driverMob):""}`:"",plcBillName(p)?"Billed to "+esc(plcBillName(p)):"",p.loadDate?"Loading "+fd(p.loadDate)+(p.loadTime?" "+esc(p.loadTime):""):""].filter(Boolean).map(x=>`<span>${x}</span>`).join("")}</div>
     ${p.status==="Cancelled"?`<div class="pc-mail">Cancelled${p.cancelledAt?" "+esc(p.cancelledAt):""}${p.cancelledBy?" by "+esc(p.cancelledBy):""}${p.cancelReason?`: ${esc(p.cancelReason)}`:""}</div>`:""}
     ${(p.emailLog||[]).length?`<div class="pc-mail">✉ Last emailed ${esc(String(p.emailLog.slice(-1)[0].at||"").replace("T"," ").slice(0,16))} to ${esc(p.emailLog.slice(-1)[0].to)}</div>`:""}
+    ${mgrLine(p.managers,"pmgr",p.no)}
     <div class="pc-act">${p.status==="Vehicle Placed"&&!plcDrops(p).length?`<button type="button" class="btn primary" data-issue="${esc(p.no)}" data-drop="0">Issue LR</button>`:""}${p.status==="Vehicle Placed"?`<button type="button" class="btn" data-pedit="${esc(p.no)}">Edit / change vehicle</button><button type="button" class="btn ghost" data-resend="${esc(p.no)}">Resend email</button><button type="button" class="btn ghost" data-share="${esc(p.no)}">Share</button>${isAdmin()?`<button type="button" class="btn ghost danger" data-pcancel="${esc(p.no)}">Cancel</button>`:""}`
       :p.status==="Partly Issued"?`<button type="button" class="btn ghost" data-share="${esc(p.no)}">Share</button>`:""}</div>
   </article>`).join(""):`<div class="empty">${plcFilter==="open"?"No vehicles placed right now.<br>Tap <b>New placement</b> when you place a vehicle for an order.":"Nothing here yet."}</div>`;
@@ -2233,7 +2254,7 @@ function bkCard(b){
   const live=bkLive(b),open=BK_OPEN.includes(b.status),m=bkMob((b.contact||{}).mobile);
   const plc=(b.placements||[]).map(no=>{const p=placements.find(x=>x.no===no);
     return p?`<div class="pc-drop"><span class="n">Vehicle</span><span class="nm"><b class="mono">${esc(p.veh)}</b> <span>${esc(p.no)}${p.driver?" · "+esc(p.driver):""}</span></span>${plcStatusChip(p)}<button type="button" class="btn sm ghost" data-goplc="${esc(p.no)}">Open placement</button></div>`
-      :`<div class="pc-drop"><span class="n">Vehicle</span><span class="nm">${esc(no)}</span></div>`}).join("");
+      :`<div class="pc-drop"><span class="n">Vehicle</span><span class="nm">${esc(no)}${b.handledBy?` <span>handled by ${esc(b.handledBy)}</span>`:""}</span></div>`}).join("");
   const log=(b.log||[]).slice().reverse().map(l=>`<li>${esc(l.at)} · ${esc(l.what)}${l.by?` · ${esc(l.by)}`:""}</li>`).join("");
   return `<article class="pc bk${b.status==="Requested"?" new":""}" id="bk-${esc(b.no)}">
     <div class="pc-top"><span class="pc-veh">${esc(b.no)}</span>${bkChip(b)}<span class="bk-co">${esc(b.company)}</span><span class="pc-date">Booked ${esc(b.atText||"")}</span></div>
@@ -2420,6 +2441,45 @@ async function runCopies(){
   catch(e){}
   finally{copyBusy=false;if(copyQ.length)setTimeout(runCopies,8000)}
 }
+
+/* ---------- Trip managers: staff see only the trips they manage; admins can replace or add managers ---------- */
+var team=[],nextNos=null,plcMgrF="",mgrNo="";
+function mgrNames(list){return (list||[]).map(e=>{const u=(team||[]).find(t=>t.email===e);return u?(u.name||u.email):e}).join(", ")}
+function mgrLine(list,kind,no){
+  if(!settings.trips)return "";
+  return `<div class="${kind==="pmgr"?"pc-mgr":"stat-mgr"}">Managed by <b>${esc(mgrNames(list)||"nobody yet")}</b>${isAdmin()?`<button type="button" class="btn sm ghost" data-${kind}="${esc(no)}">Change</button>`:""}</div>`;
+}
+// the LR form status area, with who manages the LR
+function statusHTML(){return statusHTML0()+(cur.lrNo&&settings.trips?mgrLine(cur.managers,"lmgr",cur.lrNo):"")}
+function fillMgrFilter(){
+  const s=$("plMgr");if(!s)return;s.hidden=!settings.trips;const v=s.value;
+  s.innerHTML=`<option value="">All managers</option>`+(team||[]).map(u=>`<option value="${esc(u.email)}">${esc(u.name||u.email)}</option>`).join("");
+  s.value=(team||[]).some(u=>u.email===v)?v:"";plcMgrF=s.value;
+}
+$("plMgr").addEventListener("change",()=>{plcMgrF=$("plMgr").value;renderPlc()});
+function openMgr(no){
+  const p=placements.find(x=>x.no===no),L=p?null:all.find(x=>x.lrNo===no),pl=L&&L.placementNo?placements.find(x=>x.no===L.placementNo):null,trip=p||pl;
+  const curList=((trip||L||{}).managers)||[];mgrNo=no;
+  $("mgrTitle").textContent=`Who manages ${trip?trip.no:L?L.lrNo:no}`;
+  $("mgrSub").textContent=(trip?"The managers see this placement and all its LRs in LR Desk and handle the trip end to end.":"The managers see this LR in LR Desk and handle it end to end.")+" To replace someone, untick him and tick the new person. Admins always see every trip.";
+  const users=(team||[]).slice().sort((a,b)=>(a.role===b.role?0:a.role==="Staff"?-1:1)||String(a.name||a.email).localeCompare(String(b.name||b.email)));
+  $("mgrList").innerHTML=users.length?users.map(u=>`<label class="mgr-row"><input type="checkbox" value="${esc(u.email)}"${curList.includes(u.email)?" checked":""}><span><b>${esc(u.name||u.email)}</b> <small>${esc(u.email)}${u.role==="Admin"?", admin":""}</small></span></label>`).join("")
+    :`<div class="empty">No active people in the Users tab.</div>`;
+  $("mgrErr").textContent="";$("mgrBox").hidden=false;
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-pmgr],[data-lmgr]");if(b)openMgr(b.dataset.pmgr||b.dataset.lmgr)});
+$("mgrClose").onclick=()=>{$("mgrBox").hidden=true};
+$("mgrSave").onclick=async()=>{
+  const list=[...document.querySelectorAll("#mgrList input:checked")].map(x=>x.value);
+  if(!list.length){$("mgrErr").textContent="Choose at least one manager.";return}
+  const b=$("mgrSave");b.disabled=true;b.textContent="Saving…";$("mgrErr").textContent="";
+  try{const j=await api("setManagers",{no:mgrNo,managers:list},60000);
+    if(j.placement){const p=placements.find(x=>x.no===j.placement);if(p)p.managers=j.managers}
+    (j.lrs||[]).forEach(n=>{const L=all.find(x=>x.lrNo===n);if(L)L.managers=j.managers;if(cur.lrNo===n)cur.managers=j.managers});
+    $("mgrBox").hidden=true;renderPlc();renderStatus();toast(`Now managed by ${mgrNames(j.managers)}`)}
+  catch(e){$("mgrErr").textContent=e.message}
+  finally{b.disabled=false;b.textContent="Save managers"}
+};
 
 (function start(){
   try{const q=new URLSearchParams(location.search),bk=q.get("bk");if(bk&&/^[A-Za-z0-9-]{3,24}$/.test(bk)){bkPending=bk.toUpperCase();history.replaceState(null,"",location.pathname)}}catch(e){}
