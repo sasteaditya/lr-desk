@@ -648,7 +648,7 @@ body:not([data-bookmgr="yes"]) .book-only{display:none!important}
 <div class="modal" id="payBox" hidden>
   <div class="modal-in wide" role="dialog" aria-labelledby="payTitle">
     <h3 id="payTitle">Owner payment</h3><div class="status" id="paySub"></div>
-    <div id="payForm"></div>
+    <div id="payForm"></div><datalist id="dlVendor"></datalist>
     <div id="payPod" class="pod-box" hidden></div><input type="file" id="podFile" accept="image/*,application/pdf" hidden>
     <div class="status mkt" id="payVendNote"></div>
     <div id="payZoho" class="zoho-box"></div>
@@ -930,7 +930,7 @@ function buildForm(){
     }
     h+=`</section>`;
   });
-  h+=`<datalist id="dlParty"></datalist><datalist id="dlVendor"></datalist><datalist id="dlVeh"></datalist><datalist id="dlPlace"></datalist>`;
+  h+=`<datalist id="dlParty"></datalist><datalist id="dlVeh"></datalist><datalist id="dlPlace"></datalist>`;
   F.innerHTML=h;fillLists();
 }
 let sharedParties=[];
@@ -1256,6 +1256,11 @@ function vendorNote(name,own){
   if(i&&i.zoho)return `<span class="wa-ok">In Zoho Books</span>${i.mobile?` · WhatsApp ${esc("+91 "+i.mobile.slice(0,5)+" "+i.mobile.slice(5))}`:` · <span class="wa-q">no mobile in Zoho Books, so no payment WhatsApp</span>`}${settings.receipts?(i.email?` · email ${esc(i.email)}`:` · <span class="wa-q">no email in Zoho Books, so receipts go on WhatsApp only</span>`):""}`;
   if(!settings.zoho)return i&&i.mobile?`WhatsApp ${esc(i.mobile)}`:"";
   return `<span class="wa-q">Not in Zoho Books yet.</span> Use + New vendor to create it with its details.`}
+// Zoho Books vendors load once per session. If that failed, opening a vendor box tries again.
+function loadVendors(){if(!settings.zoho||window._zohoVendors)return;window._zohoVendors=[];
+  api("zohoVendors",{},45000).then(r=>{window._zohoVendors=r.vendors||[];window._vendorInfo=r.info||{};fillVendors();
+    try{if(pd&&!$("payBox").hidden)$("payVendNote").innerHTML=vendorNote(pd.owner,isOwn(pd));if(!$("plcBox").hidden)$("plVendNote").innerHTML=vendorNote($("p_owner").value,$("p_vehOwn").value==="Own vehicle")}catch(e){}})
+  .catch(()=>{window._zohoVendors=null})}
 function fillVendors(){const names=new Set([...(window._zohoVendors||[]),...Object.values(window._vehicles||{}).map(v=>v.owner)].filter(Boolean));
   const opts=[...names].sort((a,b)=>a.localeCompare(b)).map(n=>`<option value="${esc(n)}">`).join("");["dlVendor","plDlVendor"].forEach(id=>{const d=$(id);if(d)d.innerHTML=opts})}
 async function refresh(first,pre){
@@ -1265,7 +1270,7 @@ async function refresh(first,pre){
     if(j.settings)settings=j.settings;
     if(Array.isArray(j.parties))sharedParties=j.parties;
     if(Array.isArray(j.vehicles)){window._vehicles={};j.vehicles.forEach(v=>{window._vehicles[String(v.veh).replace(/[^A-Za-z0-9]/g,"").toUpperCase()]=v})}
-    fillVendors();if(settings.zoho&&!window._zohoVendors){window._zohoVendors=[];api("zohoVendors",{},45000).then(r=>{window._zohoVendors=r.vendors||[];window._vendorInfo=r.info||{};fillVendors()}).catch(()=>{window._zohoVendors=null})}
+    fillVendors();loadVendors();
     if(Array.isArray(j.requests))requests=j.requests;
     if(Array.isArray(j.placements))placements=j.placements;
     if(Array.isArray(j.bookings))bookings=j.bookings;
@@ -1853,6 +1858,7 @@ function plcNote(){
 let plcReplaceOf=null;
 function openPlc(no){
   if(!unlocked){showLock("Sign in first.");return}
+  loadVendors();
   plcEdit=no?placements.find(p=>p.no===no):null;plcBooking=null;$("plBook").hidden=true;
   let p=plcEdit||{placedOn:today(),billTo:"Consignee"};
   PLC_FIELDS.forEach(k=>{const el=$("p_"+k);if(el)el.value=p[k]||""});if(!p.vehOwn)$("p_vehOwn").value="Market vehicle";if(!p.hireType)$("p_hireType").value="Fixed";plcOwn();renderCnors(plcCnors(p).map(c=>Object.assign({},c)));renderDrops(plcDrops(p).map(d=>Object.assign({},d)));
@@ -2120,6 +2126,7 @@ function payRender(){
 }
 async function openPay(no){
   const d=all.find(x=>x.lrNo===no);if(!d){toast("LR not found.");return}
+  loadVendors();
   pd=JSON.parse(JSON.stringify(d));if(!pd.vehOwn)pd.vehOwn="Market vehicle";if(!pd.hireType)pd.hireType="Fixed";if(!pd.podRcvd)pd.podRcvd="No";
   if(!isOwn(pd)&&!String(pd.owner||"").trim()){const o=(window._vehicles||{})[String(pd.veh||"").replace(/[^A-Za-z0-9]/g,"").toUpperCase()];
     if(o&&o.own==="Own vehicle")pd.vehOwn="Own vehicle";else if(o){pd.owner=o.owner||"";pd.ownerMob=pd.ownerMob||o.mob||"";pd.ownerPan=pd.ownerPan||o.pan||"";if(o.hireType)pd.hireType=o.hireType}}
